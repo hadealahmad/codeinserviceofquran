@@ -1,12 +1,13 @@
 FROM node:20-alpine AS base
 
-FROM deps AS deps-installer
-# Workaround stage if needed
+# Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
+
 COPY package.json package-lock.json ./
 RUN npm ci
 
+# Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -16,6 +17,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build
 
+# Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
 
