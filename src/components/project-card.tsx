@@ -342,13 +342,13 @@ export function ProjectCard({
             </Badge>
           )}
         </div>
+
+        {/* Per-repository statistics columns (always visible) */}
+        <RepoStats data={data} />
       </CardHeader>
 
       {!isCollapsed && (
-        <CardContent>
-          {/* Per-repository statistics bar */}
-          <RepoStats data={data} />
-
+        <CardContent className="pt-2">
           <Tabs value={state} onValueChange={changeState} className="w-full">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <TabsList>

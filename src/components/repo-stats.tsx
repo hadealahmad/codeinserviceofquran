@@ -1,6 +1,5 @@
 "use client"
 
-import { STATS_PERIOD_LABEL } from "@/lib/stats"
 import type { ProjectData } from "@/lib/github/types"
 
 export function RepoStats({ data }: { data: ProjectData }) {
@@ -18,21 +17,18 @@ export function RepoStats({ data }: { data: ProjectData }) {
     { label: "مع تعليقات", value: commented },
     { label: "ردّ المشرف", value: maintainerReplied },
     { label: "مسندة", value: assigned },
-    { label: "برات في 30 يوم", value: prsInPeriod, hint: STATS_PERIOD_LABEL },
-    { label: "مغلقة في 30 يوم", value: closedInPeriod, hint: STATS_PERIOD_LABEL },
+    { label: "برات في 30 يوم", value: prsInPeriod },
+    { label: "مغلقة في 30 يوم", value: closedInPeriod },
   ]
 
   return (
-    <div className="mb-4 grid grid-cols-2 gap-2 rounded-lg border border-border bg-muted/30 p-2.5 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border/60 pt-3 sm:grid-cols-3 md:grid-cols-6">
       {items.map((item) => (
-        <div
-          key={item.label}
-          className="flex flex-col items-center justify-center rounded-md border border-border/50 bg-card p-2 text-center shadow-2xs"
-        >
-          <span className="text-[11px] font-medium text-muted-foreground">
+        <div key={item.label} className="flex flex-col gap-0.5">
+          <span className="text-xs text-muted-foreground font-medium">
             {item.label}
           </span>
-          <span className="text-base font-bold tabular-nums text-card-foreground">
+          <span className="text-base font-bold tabular-nums text-foreground">
             {item.value}
           </span>
         </div>
