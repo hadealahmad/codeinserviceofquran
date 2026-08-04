@@ -27,6 +27,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { RepoStats } from "@/components/repo-stats"
+import { useLanguage } from "@/lib/language-context"
 import { cn } from "@/lib/utils"
 import type {
   Assignee,
@@ -36,32 +37,14 @@ import type {
   RelatedPr,
 } from "@/lib/github/types"
 
-const COMMENT_STATUS: Record<
-  CommentStatus,
-  { label: string; className: string }
-> = {
-  none: {
-    label: "لا توجد تعليقات",
-    className: "border-border text-muted-foreground",
-  },
-  awaiting: {
-    label: "بانتظار ردّ المشرف",
-    className: "border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/50 dark:text-amber-300",
-  },
-  maintainer: {
-    label: "ردّ المشرف",
-    className: "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/50 dark:text-emerald-300",
-  },
-}
-
 const PR_STATE: Record<RelatedPr["state"], { className: string }> = {
   open: { className: "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/50 dark:text-emerald-300" },
   merged: { className: "border-purple-200 bg-purple-100 text-purple-800 dark:border-purple-900/50 dark:bg-purple-950/50 dark:text-purple-300" },
   closed: { className: "border-red-200 bg-red-100 text-red-800 dark:border-red-900/50 dark:bg-red-950/50 dark:text-red-300" },
 }
 
-function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat("ar", {
+function formatDate(iso: string, lang: string): string {
+  return new Intl.DateTimeFormat(lang === "ar" ? "ar" : "en-US", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -74,8 +57,9 @@ function initial(login: string): string {
 }
 
 function Assignees({ assignees }: { assignees: Assignee[] }) {
+  const { t } = useLanguage()
   if (assignees.length === 0) {
-    return <span className="text-sm text-muted-foreground">غير مسند</span>
+    return <span className="text-sm text-muted-foreground">{t("غير مسند", "Unassigned")}</span>
   }
   return (
     <div className="flex -space-x-2">
@@ -104,7 +88,24 @@ function Assignees({ assignees }: { assignees: Assignee[] }) {
 }
 
 function CommentsCell({ comments }: { comments: ProcessedIssue["comments"] }) {
-  const status = COMMENT_STATUS[comments.status]
+  const { t } = useLanguage()
+
+  const commentStatusMap: Record<CommentStatus, { label: string; className: string }> = {
+    none: {
+      label: t("لا توجد تعليقات", "No comments"),
+      className: "border-border text-muted-foreground",
+    },
+    awaiting: {
+      label: t("بانتظار ردّ المشرف", "Awaiting maintainer"),
+      className: "border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/50 dark:text-amber-300",
+    },
+    maintainer: {
+      label: t("ردّ المشرف", "Maintainer replied"),
+      className: "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/50 dark:text-emerald-300",
+    },
+  }
+
+  const status = commentStatusMap[comments.status]
   return (
     <div className="flex flex-col items-start gap-1.5">
       <span className="inline-flex items-center gap-1 text-sm font-medium">
@@ -143,6 +144,7 @@ function RelatedPrs({ prs }: { prs: RelatedPr[] }) {
 }
 
 function IssueCell({ issue }: { issue: ProcessedIssue }) {
+  const { lang } = useLanguage()
   return (
     <div className="min-w-0">
       <a
@@ -156,7 +158,7 @@ function IssueCell({ issue }: { issue: ProcessedIssue }) {
       <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
         <span>#{issue.number}</span>
         <span aria-hidden>·</span>
-        <span>{formatDate(issue.createdAt)}</span>
+        <span>{formatDate(issue.createdAt, lang)}</span>
         {issue.labels.length > 0 && (
           <>
             <span aria-hidden>·</span>
@@ -187,19 +189,22 @@ function IssueCell({ issue }: { issue: ProcessedIssue }) {
 
 function IssuesTable({
   issues,
-  emptyMessage = "لا توجد قضايا",
+  emptyMessage,
 }: {
   issues: ProcessedIssue[]
   emptyMessage?: string
 }) {
+  const { t } = useLanguage()
+  const defaultEmpty = t("لا توجد قضايا", "No issues")
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[44%]">القضية</TableHead>
-          <TableHead className="w-[18%]">المسندون</TableHead>
-          <TableHead className="w-[18%]">التعليقات</TableHead>
-          <TableHead className="w-[20%]">البرات ذات الصلة</TableHead>
+          <TableHead className="w-[44%]">{t("القضية", "Issue")}</TableHead>
+          <TableHead className="w-[18%]">{t("المسندون", "Assignees")}</TableHead>
+          <TableHead className="w-[18%]">{t("التعليقات", "Comments")}</TableHead>
+          <TableHead className="w-[20%]">{t("البرات ذات الصلة", "Related PRs")}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -209,7 +214,7 @@ function IssuesTable({
               colSpan={4}
               className="h-24 text-center text-muted-foreground"
             >
-              {emptyMessage}
+              {emptyMessage || defaultEmpty}
             </TableCell>
           </TableRow>
         ) : (
@@ -248,6 +253,7 @@ export function ProjectCard({
   isCollapsed?: boolean
   onToggleCollapse?: () => void
 }) {
+  const { t } = useLanguage()
   const [state, setState] = useState<"open" | "closed">("open")
   const [closedData, setClosedData] = useState<{
     issues: ProcessedIssue[]
@@ -270,10 +276,10 @@ export function ProjectCard({
         setLoading(false)
       })
       .catch(() => {
-        setLoadError("تعذّر تحميل القضايا المغلقة")
+        setLoadError(t("تعذّر تحميل القضايا المغلقة", "Failed to load closed issues"))
         setLoading(false)
       })
-  }, [data.project])
+  }, [data.project, t])
 
   const changeState = (value: string) => {
     setState(value === "closed" ? "closed" : "open")
@@ -315,7 +321,7 @@ export function ProjectCard({
             </a>
 
             <Badge variant="outline" className="text-xs">
-              {data.issues.length} قضية
+              {t(`${data.issues.length} قضية`, `${data.issues.length} issues`)}
             </Badge>
 
             {onToggleCollapse && (
@@ -323,7 +329,7 @@ export function ProjectCard({
                 variant="ghost"
                 size="icon-sm"
                 onClick={onToggleCollapse}
-                title={isCollapsed ? "توسيع المستودع" : "طَي المستودع"}
+                title={isCollapsed ? t("توسيع المستودع", "Expand repository") : t("طَي المستودع", "Collapse repository")}
                 className="size-7"
               >
                 <ChevronDown
@@ -353,17 +359,17 @@ export function ProjectCard({
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <TabsList>
                 <TabsTrigger value="open">
-                  مفتوحة ({data.issues.length})
+                  {t("مفتوحة", "Open")} ({data.issues.length})
                 </TabsTrigger>
                 <TabsTrigger value="closed">
-                  مغلقة
+                  {t("مغلقة", "Closed")}
                   {closedData ? ` (${closedData.issues.length})` : ""}
                 </TabsTrigger>
               </TabsList>
 
               {filtersActive && (
                 <span className="text-xs text-muted-foreground">
-                  {shown} من {total}
+                  {t(`${shown} من ${total}`, `${shown} of ${total}`)}
                 </span>
               )}
             </div>
@@ -372,7 +378,7 @@ export function ProjectCard({
               <IssuesTable
                 issues={openIssues}
                 emptyMessage={
-                  filtersActive ? "لا توجد قضايا مطابقة للفلتر" : undefined
+                  filtersActive ? t("لا توجد قضايا مطابقة للفلتر", "No issues matching filter") : undefined
                 }
               />
             </TabsContent>
@@ -392,7 +398,7 @@ export function ProjectCard({
                 <IssuesTable
                   issues={closedIssues}
                   emptyMessage={
-                    filtersActive ? "لا توجد قضايا مطابقة للفلتر" : undefined
+                    filtersActive ? t("لا توجد قضايا مطابقة للفلتر", "No issues matching filter") : undefined
                   }
                 />
               ) : null}

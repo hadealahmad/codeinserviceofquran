@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
-import { STATS_PERIOD_LABEL } from "@/lib/stats"
+import { useLanguage } from "@/lib/language-context"
 import type { ProjectData } from "@/lib/github/types"
 
 export function StatsSection({
@@ -9,6 +9,8 @@ export function StatsSection({
 }: {
   sections: { data: ProjectData | null }[]
 }) {
+  const { t } = useLanguage()
+
   let total = 0
   let commented = 0
   let maintainerReplied = 0
@@ -28,13 +30,15 @@ export function StatsSection({
     closedInPeriod += section.data?.stats.closedInPeriod ?? 0
   }
 
+  const periodLabel = t("آخر 30 يومًا", "Last 30 days")
+
   const items = [
-    { label: "إجمالي القضايا المفتوحة", value: total },
-    { label: "قضايا مع تعليقات", value: commented },
-    { label: "ردّ المشرف", value: maintainerReplied },
-    { label: "قضايا مسندة", value: assigned },
-    { label: "برات في الفترة", value: prsInPeriod, hint: STATS_PERIOD_LABEL },
-    { label: "مغلقة في الفترة", value: closedInPeriod, hint: STATS_PERIOD_LABEL },
+    { label: t("إجمالي القضايا المفتوحة", "Total Open Issues"), value: total },
+    { label: t("قضايا مع تعليقات", "With Comments"), value: commented },
+    { label: t("ردّ المشرف", "Maintainer Replied"), value: maintainerReplied },
+    { label: t("قضايا مسندة", "Assigned Issues"), value: assigned },
+    { label: t("برات في الفترة", "PRs in Period"), value: prsInPeriod, hint: periodLabel },
+    { label: t("مغلقة في الفترة", "Closed in Period"), value: closedInPeriod, hint: periodLabel },
   ]
 
   return (

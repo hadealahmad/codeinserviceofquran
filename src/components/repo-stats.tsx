@@ -1,8 +1,11 @@
 "use client"
 
+import { useLanguage } from "@/lib/language-context"
 import type { ProjectData } from "@/lib/github/types"
 
 export function RepoStats({ data }: { data: ProjectData }) {
+  const { t } = useLanguage()
+
   const total = data.issues.length
   const commented = data.issues.filter((i) => i.comments.count > 0).length
   const maintainerReplied = data.issues.filter(
@@ -13,12 +16,12 @@ export function RepoStats({ data }: { data: ProjectData }) {
   const closedInPeriod = data.stats.closedInPeriod ?? 0
 
   const items = [
-    { label: "القضايا المفتوحة", value: total },
-    { label: "مع تعليقات", value: commented },
-    { label: "ردّ المشرف", value: maintainerReplied },
-    { label: "مسندة", value: assigned },
-    { label: "برات في 30 يوم", value: prsInPeriod },
-    { label: "مغلقة في 30 يوم", value: closedInPeriod },
+    { label: t("القضايا المفتوحة", "Open Issues"), value: total },
+    { label: t("مع تعليقات", "With Comments"), value: commented },
+    { label: t("ردّ المشرف", "Maintainer Replied"), value: maintainerReplied },
+    { label: t("مسندة", "Assigned"), value: assigned },
+    { label: t("برات في 30 يوم", "PRs in 30d"), value: prsInPeriod },
+    { label: t("مغلقة في 30 يوم", "Closed in 30d"), value: closedInPeriod },
   ]
 
   return (

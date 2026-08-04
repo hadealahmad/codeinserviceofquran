@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Navbar } from "@/components/navbar"
 import { ProjectCard } from "@/components/project-card"
 import { StatsSection } from "@/components/stats-section"
+import { useLanguage } from "@/lib/language-context"
 import type { ProjectData } from "@/lib/github/types"
 import type { Project } from "@/lib/projects"
 
@@ -26,6 +27,7 @@ export function ProjectsView({
   initialSelected?: string
   rateLimited: boolean
 }) {
+  const { t } = useLanguage()
   const [selected, setSelected] = useState(() =>
     sections.some((section) => projectId(section) === initialSelected)
       ? initialSelected
@@ -102,9 +104,12 @@ export function ProjectsView({
         {rateLimited && (
           <Alert variant="destructive" className="mb-6">
             <AlertTriangle className="size-4" />
-            <AlertTitle>تم بلوغ حدّ طلبات GitHub</AlertTitle>
+            <AlertTitle>{t("تم بلوغ حدّ طلبات GitHub", "GitHub Rate Limit Exceeded")}</AlertTitle>
             <AlertDescription>
-              تُعرض البيانات المخزّنة سابقًا، وتحدّث تلقائيًا لاحقًا.
+              {t(
+                "تُعرض البيانات المخزّنة سابقًا، وتحدّث تلقائيًا لاحقًا.",
+                "Displaying cached data. It will auto-refresh later."
+              )}
             </AlertDescription>
           </Alert>
         )}
@@ -133,8 +138,10 @@ export function ProjectsView({
                 className="border-destructive/40 bg-destructive/5 text-destructive"
               >
                 <AlertTriangle className="size-4" />
-                <AlertTitle>تعذّر تحميل {id}</AlertTitle>
-                <AlertDescription>أعد المحاولة بعد قليل.</AlertDescription>
+                <AlertTitle>{t(`تعذّر تحميل ${id}`, `Failed to load ${id}`)}</AlertTitle>
+                <AlertDescription>
+                  {t("أعد المحاولة بعد قليل.", "Please try again later.")}
+                </AlertDescription>
               </Alert>
             )
           })}
