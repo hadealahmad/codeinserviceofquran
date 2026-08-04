@@ -9,7 +9,9 @@ import {
   Globe,
   LayoutDashboard,
   MessageSquareOff,
+  Moon,
   Search,
+  Sun,
   UserX,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -23,6 +25,7 @@ import {
 } from "@/components/ui/select"
 import { RefreshButton } from "@/components/refresh-button"
 import { useLanguage } from "@/lib/language-context"
+import { useTheme } from "@/lib/theme-context"
 import { cn } from "@/lib/utils"
 
 export type NavbarProps = {
@@ -55,11 +58,12 @@ export function Navbar({
   const pathname = usePathname()
   const isHome = pathname === "/"
   const { lang, setLang, t } = useLanguage()
+  const { theme, toggleTheme } = useTheme()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex max-w-6xl flex-col px-4 py-2.5 md:px-6 space-y-2.5">
-        {/* Main Row (Row 1): Title, Nav links, Search box, Language Switcher */}
+        {/* Main Row (Row 1): Title, Nav links, Search box, Theme & Language Switchers */}
         <div className="flex items-center justify-between gap-3">
           {/* Brand Title & Nav links */}
           <div className="flex items-center gap-3 sm:gap-6">
@@ -103,21 +107,36 @@ export function Navbar({
             </nav>
           </div>
 
-          {/* Right side: Search Box & Language Switcher */}
-          <div className="flex items-center gap-2 flex-1 max-w-xs justify-end">
+          {/* Right side: Search Box, Theme & Language Switchers */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-1 max-w-xs justify-end">
             {/* Search Box */}
             {isHome && (
-              <div className="relative w-full max-w-[160px] sm:max-w-[220px]">
+              <div className="relative w-full max-w-[140px] sm:max-w-[200px]">
                 <Search className="absolute inset-y-0 start-2.5 my-auto size-3.5 text-muted-foreground pointer-events-none" />
                 <Input
                   type="search"
-                  placeholder={t("بحث في القضايا...", "Search issues...")}
+                  placeholder={t("بحث...", "Search...")}
                   value={searchQuery}
                   onChange={(e) => onSearchChange?.(e.target.value)}
                   className="h-8 ps-8 text-xs bg-muted/40"
                 />
               </div>
             )}
+
+            {/* Theme Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleTheme}
+              title={theme === "dark" ? t("النمط الفاتح", "Light mode") : t("النمط الداكن", "Dark mode")}
+              className="h-8 px-2 text-xs font-semibold shrink-0"
+            >
+              {theme === "dark" ? (
+                <Sun className="size-3.5 text-amber-400" />
+              ) : (
+                <Moon className="size-3.5 text-foreground" />
+              )}
+            </Button>
 
             {/* Language Switcher */}
             <Button
