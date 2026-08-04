@@ -33,6 +33,7 @@ export function ProjectsView({
       ? initialSelected
       : "all"
   )
+  const [searchQuery, setSearchQuery] = useState("")
   const [filterNoComments, setFilterNoComments] = useState(false)
   const [filterUnassigned, setFilterUnassigned] = useState(false)
   const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({})
@@ -87,8 +88,10 @@ export function ProjectsView({
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      {/* Sticky Navbar */}
+      {/* Sticky Navbar with 2 rows */}
       <Navbar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
         filterNoComments={filterNoComments}
         onToggleNoComments={() => setFilterNoComments((prev) => !prev)}
         filterUnassigned={filterUnassigned}
@@ -127,6 +130,7 @@ export function ProjectsView({
               <ProjectCard
                 key={id}
                 data={section.data}
+                searchQuery={searchQuery}
                 filterNoComments={filterNoComments}
                 filterUnassigned={filterUnassigned}
                 isCollapsed={isCollapsed}

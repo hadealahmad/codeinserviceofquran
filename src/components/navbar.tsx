@@ -9,9 +9,11 @@ import {
   Globe,
   LayoutDashboard,
   MessageSquareOff,
+  Search,
   UserX,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -24,6 +26,8 @@ import { useLanguage } from "@/lib/language-context"
 import { cn } from "@/lib/utils"
 
 export type NavbarProps = {
+  searchQuery?: string
+  onSearchChange?: (query: string) => void
   filterNoComments?: boolean
   onToggleNoComments?: () => void
   filterUnassigned?: boolean
@@ -36,6 +40,8 @@ export type NavbarProps = {
 }
 
 export function Navbar({
+  searchQuery = "",
+  onSearchChange,
   filterNoComments,
   onToggleNoComments,
   filterUnassigned,
@@ -52,20 +58,20 @@ export function Navbar({
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex max-w-6xl flex-col px-4 py-2.5 md:px-6">
-        {/* Top Row */}
-        <div className="flex items-center justify-between gap-2">
-          {/* Brand & Nav links */}
+      <div className="mx-auto flex max-w-6xl flex-col px-4 py-2.5 md:px-6 space-y-2.5">
+        {/* Main Row (Row 1): Title, Nav links, Search box, Language Switcher */}
+        <div className="flex items-center justify-between gap-3">
+          {/* Brand Title & Nav links */}
           <div className="flex items-center gap-3 sm:gap-6">
             <Link
               href="/"
               className="flex items-center gap-2 font-bold text-foreground transition-opacity hover:opacity-90"
             >
-              <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
                 <BookOpen className="size-4" />
               </div>
-              <span className="text-sm font-bold tracking-tight sm:text-base">
-                {t("خدمةً للقرآن", "Code in Service of Quran")}
+              <span className="text-sm font-bold tracking-tight sm:text-base whitespace-nowrap">
+                كود في خدمة القرآن
               </span>
             </Link>
 
@@ -97,85 +103,20 @@ export function Navbar({
             </nav>
           </div>
 
-          {/* Controls */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          {/* Right side: Search Box & Language Switcher */}
+          <div className="flex items-center gap-2 flex-1 max-w-xs justify-end">
+            {/* Search Box */}
             {isHome && (
-              <>
-                {/* Filter: No Comments */}
-                {onToggleNoComments && (
-                  <Button
-                    variant={filterNoComments ? "default" : "outline"}
-                    size="sm"
-                    onClick={onToggleNoComments}
-                    title={t("بدون تعليقات", "No Comments")}
-                    className="h-8 px-2 sm:px-2.5"
-                  >
-                    <MessageSquareOff className="size-3.5" />
-                    <span className="hidden sm:inline">
-                      {t("بدون تعليقات", "No Comments")}
-                    </span>
-                  </Button>
-                )}
-
-                {/* Filter: Unassigned */}
-                {onToggleUnassigned && (
-                  <Button
-                    variant={filterUnassigned ? "default" : "outline"}
-                    size="sm"
-                    onClick={onToggleUnassigned}
-                    title={t("غير مسند", "Unassigned")}
-                    className="h-8 px-2 sm:px-2.5"
-                  >
-                    <UserX className="size-3.5" />
-                    <span className="hidden sm:inline">
-                      {t("غير مسند", "Unassigned")}
-                    </span>
-                  </Button>
-                )}
-
-                {/* Collapse/Expand All Button */}
-                {onToggleCollapseAll && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onToggleCollapseAll}
-                    title={allCollapsed ? t("توسيع الكل", "Expand All") : t("طَي الكل", "Collapse All")}
-                    className="h-8 px-2 sm:px-2.5"
-                  >
-                    <ChevronsUpDown className="size-3.5" />
-                    <span className="hidden sm:inline">
-                      {allCollapsed ? t("توسيع الكل", "Expand All") : t("طَي الكل", "Collapse All")}
-                    </span>
-                  </Button>
-                )}
-
-                {/* Project Select Dropdown (Desktop) */}
-                {projects && onSelectProject && (
-                  <div className="hidden sm:block">
-                    <Select
-                      value={selectedProject}
-                      onValueChange={(val) => onSelectProject(val ?? "all")}
-                    >
-                      <SelectTrigger className="h-8 w-44 md:w-52 text-xs">
-                        <SelectValue placeholder={t("اختر المشروع", "Select Project")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">
-                          {t("كل المشاريع", "All Projects")} ({projects.length})
-                        </SelectItem>
-                        {projects.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {/* Refresh Button */}
-                <RefreshButton />
-              </>
+              <div className="relative w-full max-w-[160px] sm:max-w-[220px]">
+                <Search className="absolute inset-y-0 start-2.5 my-auto size-3.5 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="search"
+                  placeholder={t("بحث في القضايا...", "Search issues...")}
+                  value={searchQuery}
+                  onChange={(e) => onSearchChange?.(e.target.value)}
+                  className="h-8 ps-8 text-xs bg-muted/40"
+                />
+              </div>
             )}
 
             {/* Language Switcher */}
@@ -184,7 +125,7 @@ export function Navbar({
               size="sm"
               onClick={() => setLang(lang === "ar" ? "en" : "ar")}
               title={lang === "ar" ? "Switch to English" : "التحويل إلى العربية"}
-              className="h-8 px-2 text-xs font-semibold gap-1"
+              className="h-8 px-2 text-xs font-semibold gap-1 shrink-0"
             >
               <Globe className="size-3.5" />
               <span>{lang === "ar" ? "EN" : "عربي"}</span>
@@ -192,27 +133,82 @@ export function Navbar({
           </div>
         </div>
 
-        {/* Mobile Row: Separate row for Project Select dropdown */}
-        {isHome && projects && onSelectProject && (
-          <div className="mt-2 block border-t border-border/60 pt-2 sm:hidden">
-            <Select
-              value={selectedProject}
-              onValueChange={(val) => onSelectProject(val ?? "all")}
-            >
-              <SelectTrigger className="h-8 w-full text-xs">
-                <SelectValue placeholder={t("اختر المشروع", "Select Project")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  {t("كل المشاريع", "All Projects")} ({projects.length})
-                </SelectItem>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Second Row (Row 2): Project Select Dropdown & Filters */}
+        {isHome && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2">
+            {/* Dropdown */}
+            {projects && onSelectProject && (
+              <div className="w-full sm:w-auto flex-1 sm:flex-initial min-w-[200px]">
+                <Select
+                  value={selectedProject}
+                  onValueChange={(val) => onSelectProject(val ?? "all")}
+                >
+                  <SelectTrigger className="h-8 w-full sm:w-56 text-xs">
+                    <SelectValue placeholder={t("اختر المشروع", "Select Project")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      {t("كل المشاريع", "All Projects")} ({projects.length})
+                    </SelectItem>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Filters and Controls */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              {onToggleNoComments && (
+                <Button
+                  variant={filterNoComments ? "default" : "outline"}
+                  size="sm"
+                  onClick={onToggleNoComments}
+                  title={t("بدون تعليقات", "No Comments")}
+                  className="h-8 px-2 sm:px-2.5 text-xs"
+                >
+                  <MessageSquareOff className="size-3.5" />
+                  <span className="hidden sm:inline">
+                    {t("بدون تعليقات", "No Comments")}
+                  </span>
+                </Button>
+              )}
+
+              {onToggleUnassigned && (
+                <Button
+                  variant={filterUnassigned ? "default" : "outline"}
+                  size="sm"
+                  onClick={onToggleUnassigned}
+                  title={t("غير مسند", "Unassigned")}
+                  className="h-8 px-2 sm:px-2.5 text-xs"
+                >
+                  <UserX className="size-3.5" />
+                  <span className="hidden sm:inline">
+                    {t("غير مسند", "Unassigned")}
+                  </span>
+                </Button>
+              )}
+
+              {onToggleCollapseAll && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onToggleCollapseAll}
+                  title={allCollapsed ? t("توسيع الكل", "Expand All") : t("طَي الكل", "Collapse All")}
+                  className="h-8 px-2 sm:px-2.5 text-xs"
+                >
+                  <ChevronsUpDown className="size-3.5" />
+                  <span className="hidden sm:inline">
+                    {allCollapsed ? t("توسيع الكل", "Expand All") : t("طَي الكل", "Collapse All")}
+                  </span>
+                </Button>
+              )}
+
+              <RefreshButton />
+            </div>
           </div>
         )}
       </div>

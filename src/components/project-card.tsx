@@ -244,12 +244,14 @@ export function ProjectCard({
   data,
   filterNoComments,
   filterUnassigned,
+  searchQuery = "",
   isCollapsed = false,
   onToggleCollapse,
 }: {
   data: ProjectData
   filterNoComments: boolean
   filterUnassigned: boolean
+  searchQuery?: string
   isCollapsed?: boolean
   onToggleCollapse?: () => void
 }) {
@@ -291,12 +293,21 @@ export function ProjectCard({
       issues.filter((issue) => {
         if (filterNoComments && issue.comments.count > 0) return false
         if (filterUnassigned && issue.assignees.length > 0) return false
+        if (searchQuery.trim() !== "") {
+          const q = searchQuery.toLowerCase().trim()
+          const matchesTitle = issue.title.toLowerCase().includes(q)
+          const matchesNumber = String(issue.number).includes(q)
+          const matchesLabel = issue.labels.some((l) =>
+            l.name.toLowerCase().includes(q)
+          )
+          if (!matchesTitle && !matchesNumber && !matchesLabel) return false
+        }
         return true
       }),
-    [filterNoComments, filterUnassigned]
+    [filterNoComments, filterUnassigned, searchQuery]
   )
 
-  const filtersActive = filterNoComments || filterUnassigned
+  const filtersActive = filterNoComments || filterUnassigned || searchQuery.trim() !== ""
 
   const openIssues = filterIssues(data.issues)
   const closedIssues = closedData ? filterIssues(closedData.issues) : null
