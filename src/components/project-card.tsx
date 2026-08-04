@@ -1,9 +1,15 @@
 "use client"
 
 import { useCallback, useState } from "react"
-import { ExternalLink, GitPullRequest, MessageSquare } from "lucide-react"
+import {
+  ChevronDown,
+  ExternalLink,
+  GitPullRequest,
+  MessageSquare,
+} from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -20,6 +26,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { RepoStats } from "@/components/repo-stats"
+import { cn } from "@/lib/utils"
 import type {
   Assignee,
   CommentStatus,
@@ -39,18 +47,18 @@ const COMMENT_STATUS: Record<
   },
   awaiting: {
     label: "بانتظار ردّ المشرف",
-    className: "border-amber-200 bg-amber-100 text-amber-800",
+    className: "border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/50 dark:text-amber-300",
   },
   maintainer: {
     label: "ردّ المشرف",
-    className: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    className: "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/50 dark:text-emerald-300",
   },
 }
 
 const PR_STATE: Record<RelatedPr["state"], { className: string }> = {
-  open: { className: "border-emerald-200 bg-emerald-100 text-emerald-800" },
-  merged: { className: "border-purple-200 bg-purple-100 text-purple-800" },
-  closed: { className: "border-red-200 bg-red-100 text-red-800" },
+  open: { className: "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/50 dark:text-emerald-300" },
+  merged: { className: "border-purple-200 bg-purple-100 text-purple-800 dark:border-purple-900/50 dark:bg-purple-950/50 dark:text-purple-300" },
+  closed: { className: "border-red-200 bg-red-100 text-red-800 dark:border-red-900/50 dark:bg-red-950/50 dark:text-red-300" },
 }
 
 function formatDate(iso: string): string {
@@ -266,10 +274,14 @@ export function ProjectCard({
   data,
   filterNoComments,
   filterUnassigned,
+  isCollapsed = false,
+  onToggleCollapse,
 }: {
   data: ProjectData
   filterNoComments: boolean
   filterUnassigned: boolean
+  isCollapsed?: boolean
+  onToggleCollapse?: () => void
 }) {
   const [state, setState] = useState<"open" | "closed">("open")
   const [closedData, setClosedData] = useState<{
@@ -323,18 +335,42 @@ export function ProjectCard({
   const { meta, languages } = data
 
   return (
-    <Card>
+    <Card className="transition-all duration-200">
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-          <a
-            href={meta.htmlUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-lg font-semibold hover:underline"
-          >
-            {data.project.owner}/{data.project.repo}
-            <ExternalLink className="size-4 text-muted-foreground" />
-          </a>
+          <div className="flex items-center gap-3">
+            <a
+              href={meta.htmlUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-lg font-semibold hover:underline text-foreground"
+            >
+              {data.project.owner}/{data.project.repo}
+              <ExternalLink className="size-4 text-muted-foreground" />
+            </a>
+
+            <Badge variant="outline" className="text-xs">
+              {data.issues.length} قضية
+            </Badge>
+
+            {onToggleCollapse && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onToggleCollapse}
+                title={isCollapsed ? "توسيع المستودع" : "طَي المستودع"}
+                className="size-7"
+              >
+                <ChevronDown
+                  className={cn(
+                    "size-4 transition-transform duration-200",
+                    !isCollapsed && "rotate-180"
+                  )}
+                />
+              </Button>
+            )}
+          </div>
+
           {meta.topics.length > 0 && (
             <div className="flex flex-wrap items-center justify-end gap-1.5">
               {meta.topics.map((topic) => (
@@ -353,57 +389,62 @@ export function ProjectCard({
         <LanguageBar languages={languages} />
       </CardHeader>
 
-      <CardContent>
-        <Tabs value={state} onValueChange={changeState} className="w-full">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <TabsList>
-              <TabsTrigger value="open">
-                مفتوحة ({data.issues.length})
-              </TabsTrigger>
-              <TabsTrigger value="closed">
-                مغلقة
-                {closedData ? ` (${closedData.issues.length})` : ""}
-              </TabsTrigger>
-            </TabsList>
+      {!isCollapsed && (
+        <CardContent>
+          {/* Per-repository statistics bar */}
+          <RepoStats data={data} />
 
-            {filtersActive && (
-              <span className="text-xs text-muted-foreground">
-                {shown} من {total}
-              </span>
-            )}
-          </div>
+          <Tabs value={state} onValueChange={changeState} className="w-full">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <TabsList>
+                <TabsTrigger value="open">
+                  مفتوحة ({data.issues.length})
+                </TabsTrigger>
+                <TabsTrigger value="closed">
+                  مغلقة
+                  {closedData ? ` (${closedData.issues.length})` : ""}
+                </TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="open">
-            <IssuesTable
-              issues={openIssues}
-              emptyMessage={
-                filtersActive ? "لا توجد قضايا مطابقة للفلتر" : undefined
-              }
-            />
-          </TabsContent>
+              {filtersActive && (
+                <span className="text-xs text-muted-foreground">
+                  {shown} من {total}
+                </span>
+              )}
+            </div>
 
-          <TabsContent value="closed">
-            {loading ? (
-              <div className="space-y-2" aria-label="جاري التحميل">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Skeleton key={index} className="h-12 w-full" />
-                ))}
-              </div>
-            ) : loadError ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                {loadError}
-              </p>
-            ) : closedIssues ? (
+            <TabsContent value="open">
               <IssuesTable
-                issues={closedIssues}
+                issues={openIssues}
                 emptyMessage={
                   filtersActive ? "لا توجد قضايا مطابقة للفلتر" : undefined
                 }
               />
-            ) : null}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
+            </TabsContent>
+
+            <TabsContent value="closed">
+              {loading ? (
+                <div className="space-y-2" aria-label="جاري التحميل">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <Skeleton key={index} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : loadError ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  {loadError}
+                </p>
+              ) : closedIssues ? (
+                <IssuesTable
+                  issues={closedIssues}
+                  emptyMessage={
+                    filtersActive ? "لا توجد قضايا مطابقة للفلتر" : undefined
+                  }
+                />
+              ) : null}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      )}
     </Card>
   )
 }

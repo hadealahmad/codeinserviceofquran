@@ -34,12 +34,10 @@ export default async function Home({
   )
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-6">
-      <ProjectsView
-        sections={sections}
-        initialSelected={initialSelected}
-        rateLimited={rateLimited}
-      />
-    </main>
+    <ProjectsView
+      sections={sections}
+      initialSelected={initialSelected}
+      rateLimited={rateLimited}
+    />
   )
 }

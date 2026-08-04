@@ -1,20 +1,11 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import type { ReactNode } from "react"
-import { AlertTriangle, MessageSquareOff, UserX } from "lucide-react"
+import { AlertTriangle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Navbar } from "@/components/navbar"
 import { ProjectCard } from "@/components/project-card"
-import { RefreshButton } from "@/components/refresh-button"
 import { StatsSection } from "@/components/stats-section"
-import { cn } from "@/lib/utils"
 import type { ProjectData } from "@/lib/github/types"
 import type { Project } from "@/lib/projects"
 
@@ -25,34 +16,6 @@ export type ProjectSection = {
 
 const projectId = (section: ProjectSection) =>
   `${section.project.owner}/${section.project.repo}`
-
-function FilterToggle({
-  label,
-  active,
-  onClick,
-  icon,
-}: {
-  label: string
-  active: boolean
-  onClick: () => void
-  icon: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium whitespace-nowrap transition-colors",
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-background text-muted-foreground hover:text-foreground"
-      )}
-    >
-      {icon}
-      {label}
-    </button>
-  )
-}
 
 export function ProjectsView({
   sections,
@@ -70,6 +33,7 @@ export function ProjectsView({
   )
   const [filterNoComments, setFilterNoComments] = useState(false)
   const [filterUnassigned, setFilterUnassigned] = useState(false)
+  const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({})
 
   const visible = useMemo(
     () =>
@@ -79,6 +43,20 @@ export function ProjectsView({
     [sections, selected]
   )
 
+  const projectsOptions = useMemo(
+    () =>
+      sections.map((section) => ({
+        id: projectId(section),
+        label: projectId(section),
+      })),
+    [sections]
+  )
+
+  const allCollapsed = useMemo(() => {
+    if (visible.length === 0) return false
+    return visible.every((s) => collapsedMap[projectId(s)])
+  }, [visible, collapsedMap])
+
   const handleSelect = (value: string) => {
     setSelected(value)
     const url = new URL(window.location.href)
@@ -87,81 +65,81 @@ export function ProjectsView({
     window.history.replaceState(null, "", url.pathname + url.search)
   }
 
+  const toggleCollapseAll = () => {
+    setCollapsedMap((prev) => {
+      const next = { ...prev }
+      const shouldCollapse = !allCollapsed
+      visible.forEach((s) => {
+        next[projectId(s)] = shouldCollapse
+      })
+      return next
+    })
+  }
+
+  const toggleCollapse = (id: string) => {
+    setCollapsedMap((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }))
+  }
+
   return (
-    <>
-      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-        <h1 className="text-2xl font-bold tracking-tight">متتبّع القضايا</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <FilterToggle
-            label="بدون تعليقات"
-            active={filterNoComments}
-            onClick={() => setFilterNoComments((value) => !value)}
-            icon={<MessageSquareOff className="size-3.5" />}
-          />
-          <FilterToggle
-            label="غير مسند"
-            active={filterUnassigned}
-            onClick={() => setFilterUnassigned((value) => !value)}
-            icon={<UserX className="size-3.5" />}
-          />
-          <Select
-            value={selected}
-            onValueChange={(value) => handleSelect(value ?? "all")}
-          >
-            <SelectTrigger className="w-56">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                كل المشاريع ({sections.length})
-              </SelectItem>
-              {sections.map((section) => (
-                <SelectItem
-                  key={projectId(section)}
-                  value={projectId(section)}
-                >
-                  {projectId(section)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <RefreshButton />
-        </div>
-      </header>
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      {/* Sticky Navbar */}
+      <Navbar
+        filterNoComments={filterNoComments}
+        onToggleNoComments={() => setFilterNoComments((prev) => !prev)}
+        filterUnassigned={filterUnassigned}
+        onToggleUnassigned={() => setFilterUnassigned((prev) => !prev)}
+        selectedProject={selected}
+        onSelectProject={handleSelect}
+        projects={projectsOptions}
+        allCollapsed={allCollapsed}
+        onToggleCollapseAll={toggleCollapseAll}
+      />
 
-      {rateLimited && (
-        <Alert variant="destructive" className="mt-6">
-          <AlertTriangle className="size-4" />
-          <AlertTitle>تم بلوغ حدّ طلبات GitHub</AlertTitle>
-          <AlertDescription>
-            تُعرض البيانات المخزّنة سابقًا، وتحدّث تلقائيًا لاحقًا.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <StatsSection sections={visible} />
-
-      <div className="mt-6 space-y-6">
-        {visible.map((section) =>
-          section.data ? (
-            <ProjectCard
-              key={projectId(section)}
-              data={section.data}
-              filterNoComments={filterNoComments}
-              filterUnassigned={filterUnassigned}
-            />
-          ) : (
-            <Alert
-              key={projectId(section)}
-              className="border-destructive/40 bg-destructive/5 text-destructive"
-            >
-              <AlertTriangle className="size-4" />
-              <AlertTitle>تعذّر تحميل {projectId(section)}</AlertTitle>
-              <AlertDescription>أعد المحاولة بعد قليل.</AlertDescription>
-            </Alert>
-          )
+      <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-6">
+        {rateLimited && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTriangle className="size-4" />
+            <AlertTitle>تم بلوغ حدّ طلبات GitHub</AlertTitle>
+            <AlertDescription>
+              تُعرض البيانات المخزّنة سابقًا، وتحدّث تلقائيًا لاحقًا.
+            </AlertDescription>
+          </Alert>
         )}
+
+        {/* Global Summary Stats */}
+        <StatsSection sections={visible} />
+
+        {/* Projects Cards List */}
+        <div className="mt-6 space-y-6">
+          {visible.map((section) => {
+            const id = projectId(section)
+            const isCollapsed = !!collapsedMap[id]
+
+            return section.data ? (
+              <ProjectCard
+                key={id}
+                data={section.data}
+                filterNoComments={filterNoComments}
+                filterUnassigned={filterUnassigned}
+                isCollapsed={isCollapsed}
+                onToggleCollapse={() => toggleCollapse(id)}
+              />
+            ) : (
+              <Alert
+                key={id}
+                className="border-destructive/40 bg-destructive/5 text-destructive"
+              >
+                <AlertTriangle className="size-4" />
+                <AlertTitle>تعذّر تحميل {id}</AlertTitle>
+                <AlertDescription>أعد المحاولة بعد قليل.</AlertDescription>
+              </Alert>
+            )
+          })}
+        </div>
       </div>
-    </>
+    </div>
   )
 }
