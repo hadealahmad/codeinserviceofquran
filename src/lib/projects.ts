@@ -1,21 +1,22 @@
 export type Project = {
   owner: string
   repo: string
+  tag?: string
 }
 
 export const PROJECTS: Project[] = [
-  { owner: "Itqan-community", repo: "mushaf-imad-flutter" },
-  { owner: "adelpro", repo: "mushaf-imad-expo" },
-  { owner: "ibo2001", repo: "MushafImad" },
-  { owner: "YahiaRagae", repo: "mushaf-imad-android" },
-  { owner: "Itqan-community", repo: "Munajjam" },
-  { owner: "adelpro", repo: "open-mushaf-native" },
-  { owner: "Itqan-community", repo: "RATQ" },
-  { owner: "adelpro", repo: "open-tarteel" },
-  { owner: "adelpro", repo: "quran-search-engine" },
-  { owner: "Itqan-community", repo: "cms-backend" },
-  { owner: "Itqan-community", repo: "cms-frontend" },
-  { owner: "Itqan-community", repo: "quran-apps-directory" },
+  { owner: "Itqan-community", repo: "mushaf-imad-flutter", tag: "Flutter" },
+  { owner: "adelpro", repo: "mushaf-imad-expo", tag: "React Native" },
+  { owner: "ibo2001", repo: "MushafImad", tag: "Swift" },
+  { owner: "YahiaRagae", repo: "mushaf-imad-android", tag: "Kotlin" },
+  { owner: "Itqan-community", repo: "Munajjam", tag: "Python والذكاء الاصطناعي" },
+  { owner: "adelpro", repo: "open-mushaf-native", tag: "React Native" },
+  { owner: "Itqan-community", repo: "RATQ", tag: "البيانات المفتوحة والبنية التحتية" },
+  { owner: "adelpro", repo: "open-tarteel", tag: "TypeScript / Web" },
+  { owner: "adelpro", repo: "quran-search-engine", tag: "TypeScript / Web" },
+  { owner: "Itqan-community", repo: "cms-backend", tag: "البيانات المفتوحة والبنية التحتية" },
+  { owner: "Itqan-community", repo: "cms-frontend", tag: "البيانات المفتوحة والبنية التحتية" },
+  { owner: "Itqan-community", repo: "quran-apps-directory", tag: "TypeScript / Web" },
 ]
 
 // Order of clusters (owners). Sections are sorted by this order but clusters

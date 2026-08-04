@@ -1,3 +1,5 @@
+import type { Project } from "@/lib/projects"
+
 export type GhUser = {
   login: string
   id: number
@@ -119,10 +121,7 @@ export type ProjectStats = {
 }
 
 export type ProjectData = {
-  project: {
-    owner: string
-    repo: string
-  }
+  project: Project
   meta: ProjectMeta
   languages: LanguageInfo[]
   maintainers: string[]

@@ -115,7 +115,7 @@ export async function loadProject(
   processed.sort((a, b) => b.number - a.number)
 
   return {
-    project: { owner, repo },
+    project,
     meta: {
       fullName: repoInfo.full_name,
       htmlUrl: repoInfo.html_url,

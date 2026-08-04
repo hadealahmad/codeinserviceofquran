@@ -31,7 +31,6 @@ import { cn } from "@/lib/utils"
 import type {
   Assignee,
   CommentStatus,
-  LanguageInfo,
   ProcessedIssue,
   ProjectData,
   RelatedPr,
@@ -72,40 +71,6 @@ function formatDate(iso: string): string {
 
 function initial(login: string): string {
   return login.charAt(0).toUpperCase()
-}
-
-function LanguageBar({ languages }: { languages: LanguageInfo[] }) {
-  if (languages.length === 0) return null
-  return (
-    <div className="mt-4 w-full space-y-2">
-      <div
-        dir="ltr"
-        className="flex h-1.5 w-full overflow-hidden rounded-full bg-muted"
-      >
-        {languages.map((language) => (
-          <div
-            key={language.name}
-            className="h-full"
-            style={{
-              width: `${language.percent}%`,
-              backgroundColor: language.color,
-            }}
-          />
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        {languages.map((language) => (
-          <span key={language.name} className="inline-flex items-center gap-1.5">
-            <span
-              className="size-2.5 rounded-full"
-              style={{ backgroundColor: language.color }}
-            />
-            {language.name} {language.percent.toFixed(1)}٪
-          </span>
-        ))}
-      </div>
-    </div>
-  )
 }
 
 function Assignees({ assignees }: { assignees: Assignee[] }) {
@@ -332,11 +297,11 @@ export function ProjectCard({
   const shown = state === "open" ? openIssues.length : (closedIssues?.length ?? 0)
   const total = state === "open" ? data.issues.length : (closedData?.issues.length ?? 0)
 
-  const { meta, languages } = data
+  const { meta } = data
 
   return (
     <Card className="transition-all duration-200">
-      <CardHeader>
+      <CardHeader className="pb-4">
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <div className="flex items-center gap-3">
             <a
@@ -371,22 +336,12 @@ export function ProjectCard({
             )}
           </div>
 
-          {meta.topics.length > 0 && (
-            <div className="flex flex-wrap items-center justify-end gap-1.5">
-              {meta.topics.map((topic) => (
-                <a
-                  key={topic}
-                  href={`https://github.com/topics/${topic}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Badge variant="secondary">{topic}</Badge>
-                </a>
-              ))}
-            </div>
+          {data.project.tag && (
+            <Badge variant="secondary" className="text-xs font-medium px-2.5 py-0.5">
+              {data.project.tag}
+            </Badge>
           )}
         </div>
-        <LanguageBar languages={languages} />
       </CardHeader>
 
       {!isCollapsed && (
