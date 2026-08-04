@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/tooltip"
 import { RepoStats } from "@/components/repo-stats"
 import { useLanguage } from "@/lib/language-context"
+import { getCategoryBadgeClass } from "@/lib/tag-styles"
 import { cn } from "@/lib/utils"
 import type {
   Assignee,
@@ -38,9 +39,9 @@ import type {
 } from "@/lib/github/types"
 
 const PR_STATE: Record<RelatedPr["state"], { className: string }> = {
-  open: { className: "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/50 dark:text-emerald-300" },
-  merged: { className: "border-purple-200 bg-purple-100 text-purple-800 dark:border-purple-900/50 dark:bg-purple-950/50 dark:text-purple-300" },
-  closed: { className: "border-red-200 bg-red-100 text-red-800 dark:border-red-900/50 dark:bg-red-950/50 dark:text-red-300" },
+  open: { className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" },
+  merged: { className: "border-purple-500/40 bg-purple-500/10 text-purple-700 dark:text-purple-300" },
+  closed: { className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300" },
 }
 
 function formatDate(iso: string, lang: string): string {
@@ -75,7 +76,7 @@ function Assignees({ assignees }: { assignees: Assignee[] }) {
               />
             }
           >
-            <Avatar className="size-7 ring-2 ring-card">
+            <Avatar className="size-7 ring-2 ring-card shadow-2xs">
               <AvatarImage src={assignee.avatarUrl} alt={assignee.login} />
               <AvatarFallback>{initial(assignee.login)}</AvatarFallback>
             </Avatar>
@@ -93,15 +94,15 @@ function CommentsCell({ comments }: { comments: ProcessedIssue["comments"] }) {
   const commentStatusMap: Record<CommentStatus, { label: string; className: string }> = {
     none: {
       label: t("لا توجد تعليقات", "No comments"),
-      className: "border-border text-muted-foreground",
+      className: "border-border/80 bg-muted/60 text-muted-foreground",
     },
     awaiting: {
       label: t("بانتظار ردّ المشرف", "Awaiting maintainer"),
-      className: "border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/50 dark:text-amber-300",
+      className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
     },
     maintainer: {
       label: t("ردّ المشرف", "Maintainer replied"),
-      className: "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/50 dark:text-emerald-300",
+      className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
     },
   }
 
@@ -168,9 +169,9 @@ function IssueCell({ issue }: { issue: ProcessedIssue }) {
                   key={label.name}
                   className="rounded-full px-1.5 py-px text-[10px] font-medium"
                   style={{
-                    backgroundColor: `#${label.color}1f`,
+                    backgroundColor: `#${label.color}26`,
                     color: `#${label.color}`,
-                    border: `1px solid #${label.color}59`,
+                    border: `1px solid #${label.color}66`,
                   }}
                 >
                   {label.name}
@@ -317,7 +318,7 @@ export function ProjectCard({
   const { meta } = data
 
   return (
-    <Card className="transition-all duration-200">
+    <Card className="shadow-xs hover:shadow-md transition-shadow duration-200 border-border/80 bg-card">
       <CardHeader className="pb-4">
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <div className="flex items-center gap-3">
@@ -331,7 +332,7 @@ export function ProjectCard({
               <ExternalLink className="size-4 text-muted-foreground" />
             </a>
 
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs font-medium bg-primary/10 text-primary border-primary/20">
               {t(`${data.issues.length} قضية`, `${data.issues.length} issues`)}
             </Badge>
 
@@ -354,7 +355,10 @@ export function ProjectCard({
           </div>
 
           {data.project.tag && (
-            <Badge variant="secondary" className="text-xs font-medium px-2.5 py-0.5">
+            <Badge
+              variant="outline"
+              className={cn("text-xs font-semibold px-2.5 py-0.5 shadow-2xs", getCategoryBadgeClass(data.project.tag))}
+            >
               {data.project.tag}
             </Badge>
           )}

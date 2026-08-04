@@ -1,6 +1,7 @@
 "use client"
 
 import { useLanguage } from "@/lib/language-context"
+import { cn } from "@/lib/utils"
 import type { ProjectData } from "@/lib/github/types"
 
 export function RepoStats({ data }: { data: ProjectData }) {
@@ -16,22 +17,53 @@ export function RepoStats({ data }: { data: ProjectData }) {
   const closedInPeriod = data.stats.closedInPeriod ?? 0
 
   const items = [
-    { label: t("القضايا المفتوحة", "Open Issues"), value: total },
-    { label: t("مع تعليقات", "With Comments"), value: commented },
-    { label: t("ردّ المشرف", "Maintainer Replied"), value: maintainerReplied },
-    { label: t("مسندة", "Assigned"), value: assigned },
-    { label: t("برات في 30 يوم", "PRs in 30d"), value: prsInPeriod },
-    { label: t("مغلقة في 30 يوم", "Closed in 30d"), value: closedInPeriod },
+    {
+      label: t("القضايا المفتوحة", "Open Issues"),
+      value: total,
+      color: "text-blue-600 dark:text-blue-400",
+      dotBg: "bg-blue-500",
+    },
+    {
+      label: t("مع تعليقات", "With Comments"),
+      value: commented,
+      color: "text-amber-600 dark:text-amber-400",
+      dotBg: "bg-amber-500",
+    },
+    {
+      label: t("ردّ المشرف", "Maintainer Replied"),
+      value: maintainerReplied,
+      color: "text-emerald-600 dark:text-emerald-400",
+      dotBg: "bg-emerald-500",
+    },
+    {
+      label: t("مسندة", "Assigned"),
+      value: assigned,
+      color: "text-purple-600 dark:text-purple-400",
+      dotBg: "bg-purple-500",
+    },
+    {
+      label: t("برات في 30 يوم", "PRs in 30d"),
+      value: prsInPeriod,
+      color: "text-indigo-600 dark:text-indigo-400",
+      dotBg: "bg-indigo-500",
+    },
+    {
+      label: t("مغلقة في 30 يوم", "Closed in 30d"),
+      value: closedInPeriod,
+      color: "text-rose-600 dark:text-rose-400",
+      dotBg: "bg-rose-500",
+    },
   ]
 
   return (
     <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border/60 pt-3 sm:grid-cols-3 md:grid-cols-6">
       {items.map((item) => (
         <div key={item.label} className="flex flex-col gap-0.5">
-          <span className="text-xs text-muted-foreground font-medium">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+            <span className={cn("size-1.5 rounded-full shrink-0", item.dotBg)} />
             {item.label}
           </span>
-          <span className="text-base font-bold tabular-nums text-foreground">
+          <span className={cn("text-base font-bold tabular-nums ps-3", item.color)}>
             {item.value}
           </span>
         </div>
