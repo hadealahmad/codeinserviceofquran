@@ -70,7 +70,7 @@ export function Navbar({
               <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
                 <BookOpen className="size-4" />
               </div>
-              <span className="text-sm font-bold tracking-tight sm:text-base whitespace-nowrap">
+              <span className="hidden sm:inline text-sm font-bold tracking-tight sm:text-base whitespace-nowrap">
                 كود في خدمة القرآن
               </span>
             </Link>
