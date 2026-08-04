@@ -55,8 +55,8 @@ export function ProjectsView({
   )
 
   const allCollapsed = useMemo(() => {
-    if (visible.length === 0) return false
-    return visible.every((s) => collapsedMap[projectId(s)])
+    if (visible.length === 0) return true
+    return visible.every((s) => (collapsedMap[projectId(s)] ?? true))
   }, [visible, collapsedMap])
 
   const handleSelect = (value: string) => {
@@ -81,7 +81,7 @@ export function ProjectsView({
   const toggleCollapse = (id: string) => {
     setCollapsedMap((prev) => ({
       ...prev,
-      [id]: !prev[id],
+      [id]: !(prev[id] ?? true),
     }))
   }
 
@@ -121,7 +121,7 @@ export function ProjectsView({
         <div className="mt-6 space-y-6">
           {visible.map((section) => {
             const id = projectId(section)
-            const isCollapsed = !!collapsedMap[id]
+            const isCollapsed = collapsedMap[id] ?? true
 
             return section.data ? (
               <ProjectCard

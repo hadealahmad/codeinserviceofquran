@@ -12,9 +12,9 @@ const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
 });
 
 export const metadata: Metadata = {
-  title: "متتبّع القضايا | خدمةً للقرآن",
+  title: "Issue Tracker | Code In Service of Quran",
   description:
-    "لوحة لتتبّع قضايا وطلبات السحب لمشاريع خدمة القرآن على GitHub",
+    "Dashboard for tracking issues and PRs across Code In Service of Quran repositories on GitHub",
 };
 
 export default function RootLayout({
@@ -24,8 +24,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="ar"
-      dir="rtl"
+      lang="en"
+      dir="ltr"
       className={`${ibmPlexSansArabic.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">

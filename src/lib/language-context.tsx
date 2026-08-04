@@ -11,21 +11,20 @@ type LanguageContextType = {
 }
 
 const LanguageContext = createContext<LanguageContextType>({
-  lang: "ar",
+  lang: "en",
   setLang: () => {},
-  t: (ar) => ar,
+  t: (_ar, en) => en,
 })
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Language>("ar")
+  const [lang, setLangState] = useState<Language>("en")
 
   useEffect(() => {
     const saved = localStorage.getItem("app_lang") as Language
-    if (saved === "ar" || saved === "en") {
-      setLangState(saved)
-      document.documentElement.dir = saved === "ar" ? "rtl" : "ltr"
-      document.documentElement.lang = saved
-    }
+    const targetLang = saved === "ar" ? "ar" : "en"
+    setLangState(targetLang)
+    document.documentElement.dir = targetLang === "ar" ? "rtl" : "ltr"
+    document.documentElement.lang = targetLang
   }, [])
 
   const setLang = (newLang: Language) => {
