@@ -8,7 +8,6 @@ export const PROJECTS: Project[] = [
   { owner: "Itqan-community", repo: "mushaf-imad-flutter", tag: "Flutter" },
   { owner: "adelpro", repo: "mushaf-imad-expo", tag: "React Native" },
   { owner: "ibo2001", repo: "MushafImad", tag: "Swift" },
-  { owner: "YahiaRagae", repo: "mushaf-imad-android", tag: "Kotlin" },
   { owner: "Itqan-community", repo: "Munajjam", tag: "Python والذكاء الاصطناعي" },
   { owner: "adelpro", repo: "open-mushaf-native", tag: "React Native" },
   { owner: "Itqan-community", repo: "RATQ", tag: "البيانات المفتوحة والبنية التحتية" },
