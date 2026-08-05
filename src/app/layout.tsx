@@ -13,9 +13,9 @@ const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
 });
 
 export const metadata: Metadata = {
-  title: "Issue Tracker | Code In Service of Quran",
+  title: "كود يخدم القرآن | Code Serving Quran",
   description:
-    "Dashboard for tracking issues and PRs across Code In Service of Quran repositories on GitHub",
+    "Dashboard for tracking issues and PRs across Code Serving Quran repositories on GitHub",
 };
 
 export default function RootLayout({

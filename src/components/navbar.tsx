@@ -75,7 +75,7 @@ export function Navbar({
                 <BookOpen className="size-4" />
               </div>
               <span className="hidden sm:inline text-sm font-bold tracking-tight sm:text-base whitespace-nowrap">
-                كود في خدمة القرآن
+                {t("كود يخدم القرآن", "Code Serving Quran")}
               </span>
             </Link>
 

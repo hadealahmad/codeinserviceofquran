@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { useLanguage } from "@/lib/language-context"
+import { STATS_PERIOD_LABEL, STATS_PERIOD_LABEL_EN } from "@/lib/stats"
 import { cn } from "@/lib/utils"
 import type { ProjectData } from "@/lib/github/types"
 
@@ -39,7 +40,7 @@ export function StatsSection({
     closedInPeriod += section.data?.stats.closedInPeriod ?? 0
   }
 
-  const periodLabel = t("آخر 30 يومًا", "Last 30 days")
+  const periodLabel = t(STATS_PERIOD_LABEL, STATS_PERIOD_LABEL_EN)
 
   const items = [
     {

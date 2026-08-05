@@ -42,13 +42,13 @@ export function RepoStats({ data }: { data: ProjectData }) {
       dotBg: "bg-purple-500",
     },
     {
-      label: t("برات في 30 يوم", "PRs in 30d"),
+      label: t("برات في الفترة", "PRs in Period"),
       value: prsInPeriod,
       color: "text-indigo-600 dark:text-indigo-400",
       dotBg: "bg-indigo-500",
     },
     {
-      label: t("مغلقة في 30 يوم", "Closed in 30d"),
+      label: t("مغلقة في الفترة", "Closed in Period"),
       value: closedInPeriod,
       color: "text-rose-600 dark:text-rose-400",
       dotBg: "bg-rose-500",

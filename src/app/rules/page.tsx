@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Navbar } from "@/components/navbar"
 
 export const metadata: Metadata = {
-  title: "قواعد المشاريع | خدمةً للقرآن",
+  title: "قواعد المشاريع | كود يخدم القرآن",
   description: "إرشادات وقواعد حملة المشاريع القرآنية للمشرفين والمساهمين",
 }
 
@@ -35,7 +35,7 @@ export default function RulesPage() {
             قواعد وأحكام المشاريع
           </h1>
           <p className="text-muted-foreground text-base max-w-3xl">
-            إرشادات وقواعد المشاركة في حملة مشاريع خدمة القرآن الكريم الموجهة للمشرفين والمساهمين لبناء مجتمعات مستدامة.
+            إرشادات وقواعد المشاركة في مبادرة كود يخدم القرآن الموجهة للمشرفين والمساهمين لبناء مجتمعات مستدامة.
           </p>
         </div>
 
