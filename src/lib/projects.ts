@@ -5,8 +5,6 @@ export type Project = {
 }
 
 export const PROJECTS: Project[] = [
-  { owner: "Itqan-community", repo: "mushaf-imad-flutter", tag: "Flutter" },
-  { owner: "adelpro", repo: "mushaf-imad-expo", tag: "React Native" },
   { owner: "ibo2001", repo: "MushafImad", tag: "Swift" },
   { owner: "Itqan-community", repo: "Munajjam", tag: "Python والذكاء الاصطناعي" },
   { owner: "adelpro", repo: "open-mushaf-native", tag: "React Native" },
