@@ -1,5 +1,6 @@
+import { getProjectFromDb, saveProjectToDb } from "@/lib/db"
 import type { Project } from "@/lib/projects"
-import { STATS_PERIOD } from "@/lib/stats"
+import { STATS_PERIOD, isInPeriod } from "@/lib/stats"
 import {
   getAssignees,
   getComments,
@@ -7,6 +8,7 @@ import {
   getLanguages,
   getPulls,
   getRepo,
+  getRepoEvents,
   searchClosedIssuesInPeriod,
   searchMaintainerComments,
   searchPrsInPeriod,
@@ -17,6 +19,7 @@ import type { CommentStatus, ProcessedIssue, ProjectData } from "./types"
 type LoadOptions = {
   state?: "open" | "closed"
   force?: boolean
+  skipDb?: boolean
 }
 
 const settle = <T>(promise: Promise<T>): Promise<T | null> =>
@@ -26,8 +29,14 @@ export async function loadProject(
   project: Project,
   options: LoadOptions = {}
 ): Promise<ProjectData> {
-  const { state = "open", force = false } = options
+  const { state = "open", force = false, skipDb = false } = options
   const { owner, repo } = project
+  const id = `${owner}/${repo}`
+
+  if (!force && !skipDb && state === "open") {
+    const cachedDb = await getProjectFromDb(id)
+    if (cachedDb) return cachedDb
+  }
 
   // repo info and issues are required; everything else degrades gracefully.
   const [repoInfo, issues] = await Promise.all([
@@ -35,10 +44,11 @@ export async function loadProject(
     getIssues(owner, repo, state, force),
   ])
 
-  const [languageBytes, assignableUsers, pulls] = await Promise.all([
+  const [languageBytes, assignableUsers, pulls, repoEvents] = await Promise.all([
     settle(getLanguages(owner, repo, force)),
     settle(getAssignees(owner, repo, force)),
     settle(getPulls(owner, repo, force)),
+    settle(getRepoEvents(owner, repo, force)),
   ])
 
   const [prsInPeriod, closedInPeriod] = await Promise.all([
@@ -62,6 +72,20 @@ export async function loadProject(
     ),
   ])
 
+  // Map issue numbers to assignedAt timestamp from issue events
+  const assignedAtMap = new Map<number, string>()
+  if (repoEvents) {
+    for (const event of repoEvents) {
+      if (event.event === "assigned" && event.issue?.number && event.created_at) {
+        const num = event.issue.number
+        const existing = assignedAtMap.get(num)
+        if (!existing || new Date(event.created_at) > new Date(existing)) {
+          assignedAtMap.set(num, event.created_at)
+        }
+      }
+    }
+  }
+
   // People who can be assigned = collaborators with write access, i.e. the
   // people whose replies count as "maintainer replies".
   const maintainers = new Set<string>([
@@ -69,7 +93,7 @@ export async function loadProject(
     ...(assignableUsers ?? []).map((user) => user.login),
   ])
 
-  const maintainerCommented = await detectMaintainerComments({
+  const { commentedSet, repliedAtMap } = await detectMaintainerComments({
     owner,
     repo,
     maintainers,
@@ -85,11 +109,18 @@ export async function loadProject(
 
     const count = issue.comments
     let status: CommentStatus = "none"
-    if (count > 0) {
-      status = maintainerCommented.has(issue.number)
-        ? "maintainer"
-        : "awaiting"
+    let maintainerRepliedAt: string | null = null
+
+    if (count > 0 && commentedSet.has(issue.number)) {
+      status = "maintainer"
+      maintainerRepliedAt = repliedAtMap.get(issue.number) ?? (isInPeriod(issue.created_at) ? issue.created_at : null)
+    } else if (count > 0) {
+      status = "awaiting"
     }
+
+    const assignedAt = issue.assignees.length > 0
+      ? (assignedAtMap.get(issue.number) ?? (isInPeriod(issue.created_at) ? issue.created_at : null))
+      : null
 
     processed.push({
       number: issue.number,
@@ -98,6 +129,8 @@ export async function loadProject(
       state: issue.state,
       createdAt: issue.created_at,
       updatedAt: issue.updated_at,
+      assignedAt,
+      maintainerRepliedAt,
       labels: issue.labels.map((label) => ({
         name: label.name,
         color: label.color,
@@ -107,14 +140,18 @@ export async function loadProject(
         avatarUrl: user.avatar_url,
         htmlUrl: user.html_url,
       })),
-      comments: { count, status },
+      comments: {
+        count,
+        status,
+        lastCommentAt: count > 0 ? (repliedAtMap.get(issue.number) ?? issue.updated_at) : null,
+      },
       relatedPRs: relatedPrMap.get(issue.number) ?? [],
     })
   }
 
   processed.sort((a, b) => b.number - a.number)
 
-  return {
+  const projectData: ProjectData = {
     project,
     meta: {
       fullName: repoInfo.full_name,
@@ -138,6 +175,12 @@ export async function loadProject(
       closedInPeriod: closedInPeriod?.total_count ?? 0,
     },
   }
+
+  if (!skipDb && state === "open") {
+    saveProjectToDb(id, projectData).catch(() => {})
+  }
+
+  return projectData
 }
 
 /**
@@ -155,10 +198,11 @@ async function detectMaintainerComments({
   owner: string
   repo: string
   maintainers: Set<string>
-  issues: { number: number; comments: number; pull_request?: unknown }[]
+  issues: { number: number; comments: number; pull_request?: unknown; updated_at?: string }[]
   force: boolean
-}): Promise<Set<number>> {
-  const commented = new Set<number>()
+}): Promise<{ commentedSet: Set<number>; repliedAtMap: Map<number, string> }> {
+  const commentedSet = new Set<number>()
+  const repliedAtMap = new Map<number, string>()
 
   const searchResults = await Promise.allSettled(
     [...maintainers].map((login) =>
@@ -171,31 +215,40 @@ async function detectMaintainerComments({
 
   for (const result of searchResults) {
     if (result.status === "fulfilled") {
-      for (const item of result.value.items) commented.add(item.number)
+      for (const item of result.value.items) {
+        commentedSet.add(item.number)
+        const date = item.updated_at ?? item.created_at
+        if (date) {
+          repliedAtMap.set(item.number, date)
+        }
+      }
     }
   }
 
   if (!anySearchSucceeded) {
+    const logins = new Set(
+      [...maintainers].map((login) => login.toLowerCase())
+    )
     for (const issue of issues) {
       if (issue.pull_request || issue.comments === 0) continue
       const authors = await settle(
         getComments(owner, repo, issue.number, force)
       )
       if (!authors) continue
-      const logins = new Set(
-        [...maintainers].map((login) => login.toLowerCase())
+      const maintainerComments = authors.filter(
+        (comment) =>
+          comment.user?.login &&
+          logins.has(comment.user.login.toLowerCase())
       )
-      if (
-        authors.some(
-          (comment) =>
-            comment.user?.login &&
-            logins.has(comment.user.login.toLowerCase())
-        )
-      ) {
-        commented.add(issue.number)
+      if (maintainerComments.length > 0) {
+        commentedSet.add(issue.number)
+        const latestComment = maintainerComments[maintainerComments.length - 1]
+        if (latestComment.created_at) {
+          repliedAtMap.set(issue.number, latestComment.created_at)
+        }
       }
     }
   }
 
-  return commented
+  return { commentedSet, repliedAtMap }
 }

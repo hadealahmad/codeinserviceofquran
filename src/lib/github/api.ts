@@ -182,3 +182,15 @@ export function searchClosedIssuesInPeriod(
     force
   )
 }
+
+export function getRepoEvents(
+  owner: string,
+  repo: string,
+  force?: boolean
+): Promise<import("./types").GhEvent[]> {
+  return ghFetch(
+    `/repos/${owner}/${repo}/issues/events?per_page=100`,
+    TTL.issues,
+    force
+  )
+}

@@ -1,6 +1,7 @@
 "use client"
 
 import { useLanguage } from "@/lib/language-context"
+import { isInPeriod } from "@/lib/stats"
 import { cn } from "@/lib/utils"
 import type { ProjectData } from "@/lib/github/types"
 
@@ -10,9 +11,11 @@ export function RepoStats({ data }: { data: ProjectData }) {
   const total = data.issues.length
   const commented = data.issues.filter((i) => i.comments.count > 0).length
   const maintainerReplied = data.issues.filter(
-    (i) => i.comments.status === "maintainer"
+    (i) => i.comments.status === "maintainer" && isInPeriod(i.maintainerRepliedAt)
   ).length
-  const assigned = data.issues.filter((i) => i.assignees.length > 0).length
+  const assigned = data.issues.filter(
+    (i) => i.assignees.length > 0 && isInPeriod(i.assignedAt)
+  ).length
   const prsInPeriod = data.stats.prsInPeriod ?? 0
   const closedInPeriod = data.stats.closedInPeriod ?? 0
 
@@ -36,7 +39,7 @@ export function RepoStats({ data }: { data: ProjectData }) {
       dotBg: "bg-emerald-500",
     },
     {
-      label: t("مسندة", "Assigned"),
+      label: t("مسندة في الفترة", "Assigned in Period"),
       value: assigned,
       color: "text-purple-600 dark:text-purple-400",
       dotBg: "bg-purple-500",

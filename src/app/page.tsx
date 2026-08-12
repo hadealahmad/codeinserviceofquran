@@ -1,6 +1,7 @@
 import { loadProject } from "@/lib/github/loader"
 import { RateLimitError } from "@/lib/github/errors"
 import { sortedProjects } from "@/lib/projects"
+import { initSyncScheduler } from "@/lib/sync-scheduler"
 import { ProjectsView } from "@/components/projects-view"
 
 export const dynamic = "force-dynamic"
@@ -10,6 +11,7 @@ export default async function Home({
 }: {
   searchParams: Promise<{ refresh?: string; project?: string }>
 }) {
+  initSyncScheduler()
   const { refresh, project } = await searchParams
   const force = refresh !== undefined && refresh !== ""
   const initialSelected = typeof project === "string" ? project : "all"

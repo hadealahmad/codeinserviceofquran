@@ -2,10 +2,14 @@
 
 import { useCallback, useState } from "react"
 import {
+  CheckCircle2,
+  CheckSquare,
   ChevronDown,
+  CircleDot,
   ExternalLink,
   GitPullRequest,
   MessageSquare,
+  UserCheck,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +32,7 @@ import {
 } from "@/components/ui/tooltip"
 import { RepoStats } from "@/components/repo-stats"
 import { useLanguage } from "@/lib/language-context"
+import { isInPeriod } from "@/lib/stats"
 import { getCategoryBadgeClass } from "@/lib/tag-styles"
 import { cn } from "@/lib/utils"
 import type {
@@ -57,39 +62,52 @@ function initial(login: string): string {
   return login.charAt(0).toUpperCase()
 }
 
-function Assignees({ assignees }: { assignees: Assignee[] }) {
-  const { t } = useLanguage()
+export function Assignees({
+  assignees,
+  assignedAt,
+}: {
+  assignees: Assignee[]
+  assignedAt?: string | null
+}) {
+  const { lang, t } = useLanguage()
   if (assignees.length === 0) {
     return <span className="text-sm text-muted-foreground">{t("غير مسند", "Unassigned")}</span>
   }
   return (
-    <div className="flex -space-x-2">
-      {assignees.map((assignee) => (
-        <Tooltip key={assignee.login}>
-          <TooltipTrigger
-            render={
-              <a
-                href={assignee.htmlUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="transition-transform hover:-translate-y-0.5"
-              />
-            }
-          >
-            <Avatar className="size-7 ring-2 ring-card shadow-2xs">
-              <AvatarImage src={assignee.avatarUrl} alt={assignee.login} />
-              <AvatarFallback>{initial(assignee.login)}</AvatarFallback>
-            </Avatar>
-          </TooltipTrigger>
-          <TooltipContent>{assignee.login}</TooltipContent>
-        </Tooltip>
-      ))}
+    <div className="flex flex-col items-start gap-1">
+      <div className="flex -space-x-2">
+        {assignees.map((assignee) => (
+          <Tooltip key={assignee.login}>
+            <TooltipTrigger
+              render={
+                <a
+                  href={assignee.htmlUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="transition-transform hover:-translate-y-0.5"
+                />
+              }
+            >
+              <Avatar className="size-7 ring-2 ring-card shadow-2xs">
+                <AvatarImage src={assignee.avatarUrl} alt={assignee.login} />
+                <AvatarFallback>{initial(assignee.login)}</AvatarFallback>
+              </Avatar>
+            </TooltipTrigger>
+            <TooltipContent>{assignee.login}</TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+      {assignedAt && (
+        <span className="text-[11px] text-muted-foreground font-normal whitespace-nowrap">
+          {t("أُسند:", "Assigned:")} {formatDate(assignedAt, lang)}
+        </span>
+      )}
     </div>
   )
 }
 
-function CommentsCell({ comments }: { comments: ProcessedIssue["comments"] }) {
-  const { t } = useLanguage()
+export function CommentsCell({ comments }: { comments: ProcessedIssue["comments"] }) {
+  const { lang, t } = useLanguage()
 
   const commentStatusMap: Record<CommentStatus, { label: string; className: string }> = {
     none: {
@@ -108,7 +126,7 @@ function CommentsCell({ comments }: { comments: ProcessedIssue["comments"] }) {
 
   const status = commentStatusMap[comments.status]
   return (
-    <div className="flex flex-col items-start gap-1.5">
+    <div className="flex flex-col items-start gap-1">
       <span className="inline-flex items-center gap-1 text-sm font-medium">
         <MessageSquare className="size-3.5 text-muted-foreground" />
         {comments.count}
@@ -116,11 +134,16 @@ function CommentsCell({ comments }: { comments: ProcessedIssue["comments"] }) {
       <Badge variant="outline" className={status.className}>
         {status.label}
       </Badge>
+      {comments.status !== "none" && comments.lastCommentAt && (
+        <span className="text-[11px] text-muted-foreground font-normal whitespace-nowrap">
+          {t("آخر تعليق:", "Last comment:")} {formatDate(comments.lastCommentAt, lang)}
+        </span>
+      )}
     </div>
   )
 }
 
-function RelatedPrs({ prs }: { prs: RelatedPr[] }) {
+export function RelatedPrs({ prs }: { prs: RelatedPr[] }) {
   if (prs.length === 0) {
     return <span className="text-sm text-muted-foreground">—</span>
   }
@@ -144,7 +167,7 @@ function RelatedPrs({ prs }: { prs: RelatedPr[] }) {
   )
 }
 
-function IssueCell({ issue }: { issue: ProcessedIssue }) {
+export function IssueCell({ issue }: { issue: ProcessedIssue }) {
   const { lang } = useLanguage()
   return (
     <div className="min-w-0">
@@ -188,6 +211,85 @@ function IssueCell({ issue }: { issue: ProcessedIssue }) {
   )
 }
 
+export function ProjectInlineStats({
+  data,
+  periodScope = "period",
+}: {
+  data: ProjectData
+  periodScope?: "period" | "all"
+}) {
+  const { t } = useLanguage()
+
+  const issues = data.issues ?? []
+  const total = issues.length
+  const commented = issues.filter((i) => {
+    if (i.comments.count === 0) return false
+    return periodScope === "all" || isInPeriod(i.comments.lastCommentAt ?? i.updatedAt)
+  }).length
+  const maintainerReplied = issues.filter((i) => {
+    if (i.comments.status !== "maintainer") return false
+    return periodScope === "all" || isInPeriod(i.maintainerRepliedAt)
+  }).length
+  const assigned = issues.filter((i) => {
+    if (i.assignees.length === 0) return false
+    return periodScope === "all" || isInPeriod(i.assignedAt)
+  }).length
+  const prsInPeriod = data.stats.prsInPeriod ?? 0
+  const closedInPeriod = data.stats.closedInPeriod ?? 0
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+      <span
+        title={t("إجمالي القضايا المفتوحة", "Total Open Issues")}
+        className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-0.5 text-xs font-semibold text-blue-600 dark:text-blue-400"
+      >
+        <CircleDot className="size-3.5" />
+        <span>{total}</span>
+      </span>
+
+      <span
+        title={t("قضايا مع تعليقات", "With Comments")}
+        className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400"
+      >
+        <MessageSquare className="size-3.5" />
+        <span>{commented}</span>
+      </span>
+
+      <span
+        title={t("ردّ المشرف في الفترة", "Maintainer Replied in Period")}
+        className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+      >
+        <CheckCircle2 className="size-3.5" />
+        <span>{maintainerReplied}</span>
+      </span>
+
+      <span
+        title={t("مسندة في الفترة", "Assigned in Period")}
+        className="inline-flex items-center gap-1 rounded-md bg-purple-500/10 px-2 py-0.5 text-xs font-semibold text-purple-600 dark:text-purple-400"
+      >
+        <UserCheck className="size-3.5" />
+        <span>{assigned}</span>
+      </span>
+
+      <span
+        title={t("برات في الفترة", "PRs in Period")}
+        className="inline-flex items-center gap-1 rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400"
+      >
+        <GitPullRequest className="size-3.5" />
+        <span>{prsInPeriod}</span>
+      </span>
+
+      <span
+        title={t("مغلقة في الفترة", "Closed in Period")}
+        className="inline-flex items-center gap-1 rounded-md bg-rose-500/10 px-2 py-0.5 text-xs font-semibold text-rose-600 dark:text-rose-400"
+      >
+        <CheckSquare className="size-3.5" />
+        <span>{closedInPeriod}</span>
+      </span>
+    </div>
+  )
+}
+
 function IssuesTable({
   issues,
   emptyMessage,
@@ -225,7 +327,7 @@ function IssuesTable({
                 <IssueCell issue={issue} />
               </TableCell>
               <TableCell className="align-top">
-                <Assignees assignees={issue.assignees} />
+                <Assignees assignees={issue.assignees} assignedAt={issue.assignedAt} />
               </TableCell>
               <TableCell className="align-top">
                 <CommentsCell comments={issue.comments} />
@@ -244,14 +346,20 @@ function IssuesTable({
 export function ProjectCard({
   data,
   filterNoComments,
+  filterHasComments = false,
   filterUnassigned,
+  filterAssigned = false,
+  filterMaintainerReplied = false,
   searchQuery = "",
   isCollapsed = false,
   onToggleCollapse,
 }: {
   data: ProjectData
   filterNoComments: boolean
+  filterHasComments?: boolean
   filterUnassigned: boolean
+  filterAssigned?: boolean
+  filterMaintainerReplied?: boolean
   searchQuery?: string
   isCollapsed?: boolean
   onToggleCollapse?: () => void
@@ -293,7 +401,16 @@ export function ProjectCard({
     (issues: ProcessedIssue[]) =>
       issues.filter((issue) => {
         if (filterNoComments && issue.comments.count > 0) return false
+        if (filterHasComments && issue.comments.count === 0) return false
         if (filterUnassigned && issue.assignees.length > 0) return false
+        if (filterAssigned) {
+          if (issue.assignees.length === 0) return false
+          if (!isInPeriod(issue.assignedAt)) return false
+        }
+        if (filterMaintainerReplied) {
+          if (issue.comments.status !== "maintainer") return false
+          if (!isInPeriod(issue.maintainerRepliedAt)) return false
+        }
         if (searchQuery.trim() !== "") {
           const q = searchQuery.toLowerCase().trim()
           const matchesTitle = issue.title.toLowerCase().includes(q)
@@ -305,10 +422,23 @@ export function ProjectCard({
         }
         return true
       }),
-    [filterNoComments, filterUnassigned, searchQuery]
+    [
+      filterNoComments,
+      filterHasComments,
+      filterUnassigned,
+      filterAssigned,
+      filterMaintainerReplied,
+      searchQuery,
+    ]
   )
 
-  const filtersActive = filterNoComments || filterUnassigned || searchQuery.trim() !== ""
+  const filtersActive =
+    filterNoComments ||
+    filterHasComments ||
+    filterUnassigned ||
+    filterAssigned ||
+    filterMaintainerReplied ||
+    searchQuery.trim() !== ""
 
   const openIssues = filterIssues(data.issues)
   const closedIssues = closedData ? filterIssues(closedData.issues) : null

@@ -4,14 +4,18 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   BookOpen,
+  Calendar,
+  CheckCircle2,
   ChevronsUpDown,
   FileText,
   Globe,
   LayoutDashboard,
+  MessageSquare,
   MessageSquareOff,
   Moon,
   Search,
   Sun,
+  UserCheck,
   UserX,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -33,13 +37,19 @@ export type NavbarProps = {
   onSearchChange?: (query: string) => void
   filterNoComments?: boolean
   onToggleNoComments?: () => void
+  filterHasComments?: boolean
+  onToggleHasComments?: () => void
   filterUnassigned?: boolean
   onToggleUnassigned?: () => void
+  filterAssigned?: boolean
+  onToggleAssigned?: () => void
+  filterMaintainerReplied?: boolean
+  onToggleMaintainerReplied?: () => void
+  periodScope?: "period" | "all"
+  onTogglePeriodScope?: () => void
   selectedProject?: string
   onSelectProject?: (value: string) => void
   projects?: { id: string; label: string }[]
-  allCollapsed?: boolean
-  onToggleCollapseAll?: () => void
 }
 
 export function Navbar({
@@ -47,13 +57,19 @@ export function Navbar({
   onSearchChange,
   filterNoComments,
   onToggleNoComments,
+  filterHasComments,
+  onToggleHasComments,
   filterUnassigned,
   onToggleUnassigned,
+  filterAssigned,
+  onToggleAssigned,
+  filterMaintainerReplied,
+  onToggleMaintainerReplied,
+  periodScope = "period",
+  onTogglePeriodScope,
   selectedProject,
   onSelectProject,
   projects,
-  allCollapsed,
-  onToggleCollapseAll,
 }: NavbarProps) {
   const pathname = usePathname()
   const isHome = pathname === "/"
@@ -196,6 +212,21 @@ export function Navbar({
                 </Button>
               )}
 
+              {onToggleHasComments && (
+                <Button
+                  variant={filterHasComments ? "default" : "outline"}
+                  size="sm"
+                  onClick={onToggleHasComments}
+                  title={t("بتعليقات", "Has Comments")}
+                  className="h-8 px-2 sm:px-2.5 text-xs"
+                >
+                  <MessageSquare className="size-3.5" />
+                  <span className="hidden sm:inline">
+                    {t("بتعليقات", "Has Comments")}
+                  </span>
+                </Button>
+              )}
+
               {onToggleUnassigned && (
                 <Button
                   variant={filterUnassigned ? "default" : "outline"}
@@ -211,17 +242,53 @@ export function Navbar({
                 </Button>
               )}
 
-              {onToggleCollapseAll && (
+              {onToggleAssigned && (
                 <Button
-                  variant="outline"
+                  variant={filterAssigned ? "default" : "outline"}
                   size="sm"
-                  onClick={onToggleCollapseAll}
-                  title={allCollapsed ? t("توسيع الكل", "Expand All") : t("طَي الكل", "Collapse All")}
+                  onClick={onToggleAssigned}
+                  title={t("مسندة", "Assigned")}
                   className="h-8 px-2 sm:px-2.5 text-xs"
                 >
-                  <ChevronsUpDown className="size-3.5" />
+                  <UserCheck className="size-3.5" />
                   <span className="hidden sm:inline">
-                    {allCollapsed ? t("توسيع الكل", "Expand All") : t("طَي الكل", "Collapse All")}
+                    {t("مسندة", "Assigned")}
+                  </span>
+                </Button>
+              )}
+
+              {onToggleMaintainerReplied && (
+                <Button
+                  variant={filterMaintainerReplied ? "default" : "outline"}
+                  size="sm"
+                  onClick={onToggleMaintainerReplied}
+                  title={t("ردّ المشرف", "Moderator Replied")}
+                  className="h-8 px-2 sm:px-2.5 text-xs"
+                >
+                  <CheckCircle2 className="size-3.5" />
+                  <span className="hidden sm:inline">
+                    {t("ردّ المشرف", "Moderator Replied")}
+                  </span>
+                </Button>
+              )}
+
+              {onTogglePeriodScope && (
+                <Button
+                  variant={periodScope === "period" ? "default" : "outline"}
+                  size="sm"
+                  onClick={onTogglePeriodScope}
+                  title={
+                    periodScope === "period"
+                      ? t("نطاق: الفترة المحددّة (10 أغسطس – 10 ديسمبر)", "Scope: Selected Period (10 Aug – 10 Dec)")
+                      : t("نطاق: كل الأوقات", "Scope: All Time")
+                  }
+                  className="h-8 px-2 sm:px-2.5 text-xs gap-1.5 font-semibold"
+                >
+                  <Calendar className="size-3.5" />
+                  <span className="hidden sm:inline">
+                    {periodScope === "period"
+                      ? t("خلال الفترة", "In Period")
+                      : t("كل الأوقات", "All Time")}
                   </span>
                 </Button>
               )}

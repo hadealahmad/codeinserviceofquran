@@ -10,14 +10,16 @@ import {
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { useLanguage } from "@/lib/language-context"
-import { STATS_PERIOD_LABEL, STATS_PERIOD_LABEL_EN } from "@/lib/stats"
+import { STATS_PERIOD_LABEL, STATS_PERIOD_LABEL_EN, isInPeriod } from "@/lib/stats"
 import { cn } from "@/lib/utils"
 import type { ProjectData } from "@/lib/github/types"
 
 export function StatsSection({
   sections,
+  periodScope = "period",
 }: {
   sections: { data: ProjectData | null }[]
+  periodScope?: "period" | "all"
 }) {
   const { t } = useLanguage()
 
@@ -31,11 +33,18 @@ export function StatsSection({
   for (const section of sections) {
     const issues = section.data?.issues ?? []
     total += issues.length
-    commented += issues.filter((issue) => issue.comments.count > 0).length
-    maintainerReplied += issues.filter(
-      (issue) => issue.comments.status === "maintainer"
-    ).length
-    assigned += issues.filter((issue) => issue.assignees.length > 0).length
+    commented += issues.filter((issue) => {
+      if (issue.comments.count === 0) return false
+      return periodScope === "all" || isInPeriod(issue.comments.lastCommentAt ?? issue.updatedAt)
+    }).length
+    maintainerReplied += issues.filter((issue) => {
+      if (issue.comments.status !== "maintainer") return false
+      return periodScope === "all" || isInPeriod(issue.maintainerRepliedAt)
+    }).length
+    assigned += issues.filter((issue) => {
+      if (issue.assignees.length === 0) return false
+      return periodScope === "all" || isInPeriod(issue.assignedAt)
+    }).length
     prsInPeriod += section.data?.stats.prsInPeriod ?? 0
     closedInPeriod += section.data?.stats.closedInPeriod ?? 0
   }
@@ -52,7 +61,10 @@ export function StatsSection({
       borderAccent: "border-s-4 border-s-blue-500",
     },
     {
-      label: t("قضايا مع تعليقات", "With Comments"),
+      label:
+        periodScope === "period"
+          ? t("مع تعليقات في الفترة", "Comments in Period")
+          : t("قضايا مع تعليقات", "With Comments"),
       value: commented,
       icon: MessageSquare,
       color: "text-amber-600 dark:text-amber-400",
@@ -60,7 +72,10 @@ export function StatsSection({
       borderAccent: "border-s-4 border-s-amber-500",
     },
     {
-      label: t("ردّ المشرف", "Maintainer Replied"),
+      label:
+        periodScope === "period"
+          ? t("ردّ المشرف في الفترة", "Maintainer Replied in Period")
+          : t("ردّ المشرف", "Maintainer Replied"),
       value: maintainerReplied,
       icon: CheckCircle2,
       color: "text-emerald-600 dark:text-emerald-400",
@@ -68,7 +83,10 @@ export function StatsSection({
       borderAccent: "border-s-4 border-s-emerald-500",
     },
     {
-      label: t("قضايا مسندة", "Assigned Issues"),
+      label:
+        periodScope === "period"
+          ? t("مسندة في الفترة", "Assigned in Period")
+          : t("قضايا مسندة", "Assigned Issues"),
       value: assigned,
       icon: UserCheck,
       color: "text-purple-600 dark:text-purple-400",

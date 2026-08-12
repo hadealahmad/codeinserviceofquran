@@ -41,6 +41,15 @@ export type GhIssue = {
 
 export type GhComment = {
   user: GhUser | null
+  created_at?: string
+}
+
+export type GhEvent = {
+  id: number
+  event: string
+  created_at: string
+  issue?: { number: number }
+  assignee?: GhUser
 }
 
 export type GhPull = {
@@ -54,7 +63,7 @@ export type GhPull = {
 
 export type GhSearchResult = {
   total_count: number
-  items: { number: number; title: string }[]
+  items: { number: number; title: string; updated_at?: string; created_at?: string }[]
 }
 
 export type LanguageInfo = {
@@ -91,11 +100,14 @@ export type ProcessedIssue = {
   state: "open" | "closed"
   createdAt: string
   updatedAt: string
+  assignedAt?: string | null
+  maintainerRepliedAt?: string | null
   labels: IssueLabel[]
   assignees: Assignee[]
   comments: {
     count: number
     status: CommentStatus
+    lastCommentAt?: string | null
   }
   relatedPRs: RelatedPr[]
 }

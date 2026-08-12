@@ -12,18 +12,28 @@ export function RefreshButton() {
   const [busy, setBusy] = useState(false)
   const { t } = useLanguage()
 
+  const handleRefresh = async () => {
+    setBusy(true)
+    try {
+      await fetch("/api/refresh", { method: "POST" })
+    } catch {
+      // Ignore errors; refresh page anyway
+    } finally {
+      const url = new URL(window.location.href)
+      url.searchParams.set("refresh", String(Date.now()))
+      router.replace(url.pathname + url.search)
+      router.refresh()
+      setBusy(false)
+    }
+  }
+
   return (
     <Button
       variant="outline"
       size="sm"
       disabled={busy}
       title={busy ? t("جاري التحديث...", "Refreshing...") : t("تحديث", "Refresh")}
-      onClick={() => {
-        setBusy(true)
-        const url = new URL(window.location.href)
-        url.searchParams.set("refresh", String(Date.now()))
-        router.replace(url.pathname + url.search)
-      }}
+      onClick={handleRefresh}
     >
       <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
       <span>{busy ? t("جاري التحديث...", "Refreshing...") : t("تحديث", "Refresh")}</span>
