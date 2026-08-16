@@ -107,8 +107,22 @@ export function getIssues(
   state: "open" | "closed",
   force?: boolean
 ): Promise<GhIssue[]> {
+  const sort = state === "closed" ? "updated" : "created"
   return ghFetch(
-    `/repos/${owner}/${repo}/issues?state=${state}&per_page=100&sort=created&direction=desc`,
+    `/repos/${owner}/${repo}/issues?state=${state}&per_page=100&sort=${sort}&direction=desc`,
+    TTL.issues,
+    force
+  )
+}
+
+export function getClosedIssuesSince(
+  owner: string,
+  repo: string,
+  since: string,
+  force?: boolean
+): Promise<GhIssue[]> {
+  return ghFetch(
+    `/repos/${owner}/${repo}/issues?state=closed&since=${since}T00:00:00Z&per_page=100&sort=updated&direction=desc`,
     TTL.issues,
     force
   )
@@ -194,3 +208,4 @@ export function getRepoEvents(
     force
   )
 }
+

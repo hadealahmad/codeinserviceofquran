@@ -14,7 +14,7 @@ function getPool(): mysql.Pool | null {
       connectionLimit: 10,
       queueLimit: 0,
       enableKeepAlive: true,
-      keepAliveInitialDelay: 0,
+      keepAliveInitialDelay: 10000,
     })
   }
   return pool
@@ -31,13 +31,14 @@ export async function initDb(): Promise<boolean> {
     await p.query(`
       CREATE TABLE IF NOT EXISTS project_cache (
         id VARCHAR(255) PRIMARY KEY,
-        data JSON NOT NULL,
+        data LONGTEXT NOT NULL,
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `)
     tableInitialized = true
     return true
   } catch (err) {
+    tableInitialized = false
     console.error("[DB] Failed to initialize table project_cache:", err)
     return false
   }
@@ -87,3 +88,4 @@ export async function saveProjectToDb(
     return false
   }
 }
+

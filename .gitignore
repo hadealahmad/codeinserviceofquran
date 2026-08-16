@@ -43,3 +43,6 @@ next-env.d.ts
 
 # GitHub API cache
 .cache/
+
+# Local-only data analysis (issue pull, notes, etc.)
+/analysis/

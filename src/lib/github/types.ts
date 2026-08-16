@@ -33,6 +33,7 @@ export type GhIssue = {
   state: "open" | "closed"
   created_at: string
   updated_at: string
+  closed_at?: string | null
   comments: number
   assignees: GhUser[]
   labels: GhLabel[]
@@ -57,6 +58,9 @@ export type GhPull = {
   title: string
   html_url: string
   state: "open" | "closed"
+  created_at?: string
+  updated_at?: string
+  closed_at?: string | null
   merged_at: string | null
   body: string | null
 }

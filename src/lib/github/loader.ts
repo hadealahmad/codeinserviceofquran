@@ -3,15 +3,13 @@ import type { Project } from "@/lib/projects"
 import { STATS_PERIOD, isInPeriod } from "@/lib/stats"
 import {
   getAssignees,
+  getClosedIssuesSince,
   getComments,
   getIssues,
   getLanguages,
   getPulls,
   getRepo,
   getRepoEvents,
-  searchClosedIssuesInPeriod,
-  searchMaintainerComments,
-  searchPrsInPeriod,
 } from "./api"
 import { buildRelatedPrs, toLanguages } from "./process"
 import type { CommentStatus, ProcessedIssue, ProjectData } from "./types"
@@ -31,10 +29,10 @@ export async function loadProject(
 ): Promise<ProjectData> {
   const { state = "open", force = false, skipDb = false } = options
   const { owner, repo } = project
-  const id = `${owner}/${repo}`
+  const dbKey = state === "open" ? `${owner}/${repo}` : `${owner}/${repo}:closed`
 
-  if (!force && !skipDb && state === "open") {
-    const cachedDb = await getProjectFromDb(id)
+  if (!force && !skipDb) {
+    const cachedDb = await getProjectFromDb(dbKey)
     if (cachedDb) return cachedDb
   }
 
@@ -44,33 +42,23 @@ export async function loadProject(
     getIssues(owner, repo, state, force),
   ])
 
-  const [languageBytes, assignableUsers, pulls, repoEvents] = await Promise.all([
+  const [languageBytes, assignableUsers, pulls, repoEvents, closedSince] = await Promise.all([
     settle(getLanguages(owner, repo, force)),
     settle(getAssignees(owner, repo, force)),
     settle(getPulls(owner, repo, force)),
     settle(getRepoEvents(owner, repo, force)),
+    settle(getClosedIssuesSince(owner, repo, STATS_PERIOD.start, force)),
   ])
 
-  const [prsInPeriod, closedInPeriod] = await Promise.all([
-    settle(
-      searchPrsInPeriod(
-        owner,
-        repo,
-        STATS_PERIOD.start,
-        STATS_PERIOD.end,
-        force
-      )
-    ),
-    settle(
-      searchClosedIssuesInPeriod(
-        owner,
-        repo,
-        STATS_PERIOD.start,
-        STATS_PERIOD.end,
-        force
-      )
-    ),
-  ])
+  // Count PRs created in the period directly from pulls
+  const prsInPeriodCount = (pulls ?? []).filter((pr) =>
+    isInPeriod(pr.created_at)
+  ).length
+
+  // Count issues closed in the period directly from closed issues since start
+  const closedInPeriodCount = (closedSince ?? []).filter(
+    (issue) => !issue.pull_request && isInPeriod(issue.closed_at)
+  ).length
 
   // Map issue numbers to assignedAt timestamp from issue events
   const assignedAtMap = new Map<number, string>()
@@ -93,7 +81,7 @@ export async function loadProject(
     ...(assignableUsers ?? []).map((user) => user.login),
   ])
 
-  const { commentedSet, repliedAtMap } = await detectMaintainerComments({
+  const { commentedSet, repliedAtMap, lastCommentMap } = await detectMaintainerComments({
     owner,
     repo,
     maintainers,
@@ -113,14 +101,24 @@ export async function loadProject(
 
     if (count > 0 && commentedSet.has(issue.number)) {
       status = "maintainer"
-      maintainerRepliedAt = repliedAtMap.get(issue.number) ?? (isInPeriod(issue.created_at) ? issue.created_at : null)
+      maintainerRepliedAt =
+        repliedAtMap.get(issue.number) ??
+        (isInPeriod(issue.created_at) ? issue.created_at : (isInPeriod(issue.updated_at) ? issue.updated_at : null))
     } else if (count > 0) {
       status = "awaiting"
     }
 
     const assignedAt = issue.assignees.length > 0
-      ? (assignedAtMap.get(issue.number) ?? (isInPeriod(issue.created_at) ? issue.created_at : null))
+      ? (assignedAtMap.get(issue.number) ??
+         (isInPeriod(issue.created_at) ? issue.created_at : (isInPeriod(issue.updated_at) ? issue.updated_at : null)))
       : null
+
+    const lastCommentAt =
+      count > 0
+        ? (lastCommentMap.get(issue.number) ??
+           repliedAtMap.get(issue.number) ??
+           (isInPeriod(issue.updated_at) ? issue.updated_at : issue.created_at))
+        : null
 
     processed.push({
       number: issue.number,
@@ -143,7 +141,7 @@ export async function loadProject(
       comments: {
         count,
         status,
-        lastCommentAt: count > 0 ? (repliedAtMap.get(issue.number) ?? issue.updated_at) : null,
+        lastCommentAt,
       },
       relatedPRs: relatedPrMap.get(issue.number) ?? [],
     })
@@ -171,22 +169,21 @@ export async function loadProject(
     maintainers: [...maintainers],
     issues: processed,
     stats: {
-      prsInPeriod: prsInPeriod?.total_count ?? 0,
-      closedInPeriod: closedInPeriod?.total_count ?? 0,
+      prsInPeriod: prsInPeriodCount,
+      closedInPeriod: closedInPeriodCount,
     },
   }
 
-  if (!skipDb && state === "open") {
-    saveProjectToDb(id, projectData).catch(() => {})
+  if (!skipDb) {
+    saveProjectToDb(dbKey, projectData).catch(() => {})
   }
 
   return projectData
 }
 
 /**
- * Determine which issues have at least one comment from a repo maintainer.
- * Uses one search query per maintainer (separate rate limit bucket). If all
- * searches fail, falls back to fetching comments per issue.
+ * Determine which issues have at least one comment from a repo maintainer,
+ * and track exact comment timestamps via Core API.
  */
 async function detectMaintainerComments({
   owner,
@@ -200,55 +197,54 @@ async function detectMaintainerComments({
   maintainers: Set<string>
   issues: { number: number; comments: number; pull_request?: unknown; updated_at?: string }[]
   force: boolean
-}): Promise<{ commentedSet: Set<number>; repliedAtMap: Map<number, string> }> {
+}): Promise<{
+  commentedSet: Set<number>
+  repliedAtMap: Map<number, string>
+  lastCommentMap: Map<number, string>
+}> {
   const commentedSet = new Set<number>()
   const repliedAtMap = new Map<number, string>()
+  const lastCommentMap = new Map<number, string>()
 
-  const searchResults = await Promise.allSettled(
-    [...maintainers].map((login) =>
-      searchMaintainerComments(owner, repo, login, force)
-    )
-  )
-  const anySearchSucceeded = searchResults.some(
-    (result) => result.status === "fulfilled"
+  const issuesWithComments = issues.filter(
+    (issue) => !issue.pull_request && issue.comments > 0
   )
 
-  for (const result of searchResults) {
-    if (result.status === "fulfilled") {
-      for (const item of result.value.items) {
-        commentedSet.add(item.number)
-        const date = item.updated_at ?? item.created_at
-        if (date) {
-          repliedAtMap.set(item.number, date)
-        }
-      }
-    }
+  if (issuesWithComments.length === 0) {
+    return { commentedSet, repliedAtMap, lastCommentMap }
   }
 
-  if (!anySearchSucceeded) {
-    const logins = new Set(
-      [...maintainers].map((login) => login.toLowerCase())
-    )
-    for (const issue of issues) {
-      if (issue.pull_request || issue.comments === 0) continue
-      const authors = await settle(
-        getComments(owner, repo, issue.number, force)
+  const logins = new Set([...maintainers].map((login) => login.toLowerCase()))
+
+  const results = await Promise.allSettled(
+    issuesWithComments.map(async (issue) => {
+      const comments = await getComments(owner, repo, issue.number, force)
+      return { issueNumber: issue.number, comments }
+    })
+  )
+
+  for (const result of results) {
+    if (result.status === "fulfilled" && result.value.comments?.length) {
+      const { issueNumber, comments } = result.value
+      const lastComment = comments[comments.length - 1]
+      if (lastComment?.created_at) {
+        lastCommentMap.set(issueNumber, lastComment.created_at)
+      }
+
+      const maintainerComments = comments.filter(
+        (c) => c.user?.login && logins.has(c.user.login.toLowerCase())
       )
-      if (!authors) continue
-      const maintainerComments = authors.filter(
-        (comment) =>
-          comment.user?.login &&
-          logins.has(comment.user.login.toLowerCase())
-      )
+
       if (maintainerComments.length > 0) {
-        commentedSet.add(issue.number)
-        const latestComment = maintainerComments[maintainerComments.length - 1]
-        if (latestComment.created_at) {
-          repliedAtMap.set(issue.number, latestComment.created_at)
+        commentedSet.add(issueNumber)
+        const latest = maintainerComments[maintainerComments.length - 1]
+        if (latest?.created_at) {
+          repliedAtMap.set(issueNumber, latest.created_at)
         }
       }
     }
   }
 
-  return { commentedSet, repliedAtMap }
+  return { commentedSet, repliedAtMap, lastCommentMap }
 }
+
