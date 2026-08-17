@@ -11,7 +11,7 @@ import {
   getRepo,
   getRepoEvents,
 } from "./api"
-import { buildRelatedPrs, toLanguages } from "./process"
+import { buildRelatedPrs, extractIssueReferences, toLanguages } from "./process"
 import type { CommentStatus, ProcessedIssue, ProjectData } from "./types"
 
 type LoadOptions = {
@@ -149,6 +149,36 @@ export async function loadProject(
 
   processed.sort((a, b) => b.number - a.number)
 
+  const openIssueNumbers = new Set(
+    issues.filter((i) => !i.pull_request).map((i) => i.number)
+  )
+  const closedIssueNumbers = new Set(
+    (closedSince ?? []).filter((i) => !i.pull_request).map((i) => i.number)
+  )
+
+  const processedPulls: import("./types").ProcessedPull[] = (pulls ?? []).map((pull) => {
+    const refs = extractIssueReferences(`${pull.title}\n${pull.body ?? ""}`)
+    const relatedClosed = [...refs].filter(
+      (num) => closedIssueNumbers.has(num) || (!openIssueNumbers.has(num) && pull.merged_at)
+    )
+
+    return {
+      number: pull.number,
+      title: pull.title,
+      htmlUrl: pull.html_url,
+      state: pull.merged_at ? "merged" : (pull.state === "closed" ? "closed" : "open"),
+      createdAt: pull.created_at ?? "",
+      closedAt: pull.closed_at,
+      mergedAt: pull.merged_at,
+      relatedClosedIssues: relatedClosed,
+      user: {
+        login: pull.user?.login ?? "ghost",
+        avatarUrl: pull.user?.avatar_url ?? "",
+        htmlUrl: pull.user?.html_url ?? `https://github.com/${pull.user?.login ?? "ghost"}`,
+      },
+    }
+  })
+
   const projectData: ProjectData = {
     project,
     meta: {
@@ -168,6 +198,7 @@ export async function loadProject(
     languages: toLanguages(languageBytes ?? {}),
     maintainers: [...maintainers],
     issues: processed,
+    pulls: processedPulls,
     stats: {
       prsInPeriod: prsInPeriodCount,
       closedInPeriod: closedInPeriodCount,

@@ -19,6 +19,18 @@ export function RepoStats({ data }: { data: ProjectData }) {
   const prsInPeriod = data.stats.prsInPeriod ?? 0
   const closedInPeriod = data.stats.closedInPeriod ?? 0
 
+  const maintainers = new Set((data.maintainers ?? []).map((m) => m.toLowerCase()))
+  const contributorsInPeriod = new Set(
+    (data.pulls ?? [])
+      .filter((pr) => {
+        const login = pr.user?.login
+        if (!login || login.endsWith("[bot]") || login === "ghost") return false
+        if (maintainers.has(login.toLowerCase())) return false
+        return isInPeriod(pr.createdAt)
+      })
+      .map((pr) => pr.user.login.toLowerCase())
+  ).size
+
   const items = [
     {
       label: t("القضايا المفتوحة", "Open Issues"),
@@ -56,10 +68,16 @@ export function RepoStats({ data }: { data: ProjectData }) {
       color: "text-rose-600 dark:text-rose-400",
       dotBg: "bg-rose-500",
     },
+    {
+      label: t("المساهمون في الفترة", "Contributors in Period"),
+      value: contributorsInPeriod,
+      color: "text-teal-600 dark:text-teal-400",
+      dotBg: "bg-teal-500",
+    },
   ]
 
   return (
-    <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border/60 pt-3 sm:grid-cols-3 md:grid-cols-6">
+    <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border/60 pt-3 sm:grid-cols-3 md:grid-cols-4">
       {items.map((item) => (
         <div key={item.label} className="flex flex-col gap-0.5">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">

@@ -7,8 +7,10 @@ import {
   GitPullRequest,
   MessageSquare,
   UserCheck,
+  Users,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { countUniqueContributors } from "@/lib/contributors-utils"
 import { useLanguage } from "@/lib/language-context"
 import { STATS_PERIOD_LABEL, STATS_PERIOD_LABEL_EN, isInPeriod } from "@/lib/stats"
 import { cn } from "@/lib/utils"
@@ -49,6 +51,7 @@ export function StatsSection({
     closedInPeriod += section.data?.stats.closedInPeriod ?? 0
   }
 
+  const uniqueContributors = countUniqueContributors(sections, periodScope)
   const periodLabel = t(STATS_PERIOD_LABEL, STATS_PERIOD_LABEL_EN)
 
   const items = [
@@ -111,10 +114,22 @@ export function StatsSection({
       accentBg: "bg-rose-500/10",
       borderAccent: "border-s-4 border-s-rose-500",
     },
+    {
+      label:
+        periodScope === "period"
+          ? t("المساهمون في الفترة", "Contributors in Period")
+          : t("إجمالي المساهمين", "Total Contributors"),
+      value: uniqueContributors,
+      hint: periodScope === "period" ? periodLabel : undefined,
+      icon: Users,
+      color: "text-teal-600 dark:text-teal-400",
+      accentBg: "bg-teal-500/10",
+      borderAccent: "border-s-4 border-s-teal-500",
+    },
   ]
 
   return (
-    <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {items.map((item) => {
         const Icon = item.icon
         return (

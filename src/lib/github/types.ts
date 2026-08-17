@@ -63,6 +63,36 @@ export type GhPull = {
   closed_at?: string | null
   merged_at: string | null
   body: string | null
+  user?: GhUser | null
+}
+
+export type GhUserProfile = {
+  login: string
+  id: number
+  avatar_url: string
+  html_url: string
+  name: string | null
+  email: string | null
+  blog: string | null
+  bio?: string | null
+  location?: string | null
+  company?: string | null
+}
+
+export type ProcessedPull = {
+  number: number
+  title: string
+  htmlUrl: string
+  state: "open" | "closed" | "merged"
+  createdAt: string
+  closedAt?: string | null
+  mergedAt?: string | null
+  relatedClosedIssues?: number[]
+  user: {
+    login: string
+    avatarUrl: string
+    htmlUrl: string
+  }
 }
 
 export type GhSearchResult = {
@@ -142,5 +172,45 @@ export type ProjectData = {
   languages: LanguageInfo[]
   maintainers: string[]
   issues: ProcessedIssue[]
+  pulls?: ProcessedPull[]
   stats: ProjectStats
+}
+
+export type ContributorPr = {
+  number: number
+  title: string
+  htmlUrl: string
+  state: "open" | "closed" | "merged"
+  createdAt: string
+  closedAt?: string | null
+  mergedAt?: string | null
+  relatedClosedIssues?: number[]
+  inPeriod: boolean
+}
+
+export type ContributorProjectGroup = {
+  project: Project
+  meta?: {
+    fullName: string
+    tag?: string
+  }
+  prs: ContributorPr[]
+}
+
+export type ContributorItem = {
+  login: string
+  name: string | null
+  avatarUrl: string
+  htmlUrl: string
+  email: string | null
+  website: string | null
+  bio: string | null
+  prsInPeriodCount: number
+  acceptedPrsInPeriodCount: number
+  acceptedPrsTotalCount: number
+  relatedClosedIssuesInPeriodCount: number
+  relatedClosedIssuesTotalCount: number
+  totalPrsCount: number
+  projectsCount: number
+  prsByProject: ContributorProjectGroup[]
 }

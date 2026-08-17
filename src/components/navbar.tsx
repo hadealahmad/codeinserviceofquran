@@ -6,7 +6,6 @@ import {
   BookOpen,
   Calendar,
   CheckCircle2,
-  ChevronsUpDown,
   FileText,
   Globe,
   LayoutDashboard,
@@ -17,6 +16,7 @@ import {
   Sun,
   UserCheck,
   UserX,
+  Users,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -107,6 +107,18 @@ export function Navbar({
               >
                 <LayoutDashboard className="size-3.5 sm:size-4" />
                 <span>{t("المشاريع", "Projects")}</span>
+              </Link>
+              <Link
+                href="/contributors"
+                className={cn(
+                  "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors sm:text-sm",
+                  pathname === "/contributors"
+                    ? "bg-muted text-foreground font-semibold"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                )}
+              >
+                <Users className="size-3.5 sm:size-4" />
+                <span>{t("المساهمون", "Contributors")}</span>
               </Link>
               <Link
                 href="/rules"

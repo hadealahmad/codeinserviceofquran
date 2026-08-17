@@ -7,6 +7,7 @@ import type {
   GhRepo,
   GhSearchResult,
   GhUser,
+  GhUserProfile,
 } from "./types"
 
 const BASE = "https://api.github.com"
@@ -29,6 +30,7 @@ const TTL = {
   pulls: 10 * 60 * 1000,
   comments: 30 * 60 * 1000,
   search: 30 * 60 * 1000,
+  user: 24 * 60 * 60 * 1000,
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -207,5 +209,12 @@ export function getRepoEvents(
     TTL.issues,
     force
   )
+}
+
+export function getUserProfile(
+  username: string,
+  force?: boolean
+): Promise<GhUserProfile> {
+  return ghFetch(`/users/${username}`, TTL.user, force)
 }
 
