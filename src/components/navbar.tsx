@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select"
 import { RefreshButton } from "@/components/refresh-button"
 import { useLanguage } from "@/lib/language-context"
+import { STATS_PERIOD_LABEL, STATS_PERIOD_LABEL_EN } from "@/lib/stats"
 import { useTheme } from "@/lib/theme-context"
 import { cn } from "@/lib/utils"
 
@@ -291,7 +292,10 @@ export function Navbar({
                   onClick={onTogglePeriodScope}
                   title={
                     periodScope === "period"
-                      ? t("نطاق: الفترة المحددّة (10 أغسطس – 10 ديسمبر)", "Scope: Selected Period (10 Aug – 10 Dec)")
+                      ? t(
+                          `نطاق: الفترة المحددّة (${STATS_PERIOD_LABEL.replace(" 2026", "")})`,
+                          `Scope: Selected Period (${STATS_PERIOD_LABEL_EN.replace(" 2026", "")})`
+                        )
                       : t("نطاق: كل الأوقات", "Scope: All Time")
                   }
                   className="h-8 px-2 sm:px-2.5 text-xs gap-1.5 font-semibold"
