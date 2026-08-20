@@ -6,6 +6,7 @@ import type {
   GhPull,
   GhRepo,
   GhSearchResult,
+  GhSocialAccount,
   GhUser,
   GhUserProfile,
 } from "./types"
@@ -211,10 +212,31 @@ export function getRepoEvents(
   )
 }
 
-export function getUserProfile(
+export async function getUserProfile(
   username: string,
   force?: boolean
 ): Promise<GhUserProfile> {
-  return ghFetch(`/users/${username}`, TTL.user, force)
+  const [profileResult, socialsResult] = await Promise.allSettled([
+    ghFetch<GhUserProfile>(`/users/${username}`, TTL.user, force),
+    ghFetch<GhSocialAccount[]>(
+      `/users/${username}/social_accounts`,
+      TTL.user,
+      force
+    ),
+  ])
+
+  if (profileResult.status === "rejected") {
+    throw profileResult.reason
+  }
+
+  const profile = profileResult.value
+  if (socialsResult.status === "fulfilled" && Array.isArray(socialsResult.value)) {
+    profile.social_accounts = socialsResult.value
+  } else if (!profile.social_accounts) {
+    profile.social_accounts = []
+  }
+
+  return profile
 }
+
 

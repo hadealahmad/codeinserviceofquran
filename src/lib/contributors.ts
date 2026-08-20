@@ -8,7 +8,7 @@ import type {
 } from "@/lib/github/types"
 import type { Project } from "@/lib/projects"
 import { isInPeriod } from "@/lib/stats"
-import { isBotUser } from "./contributors-utils"
+import { isBotUser, parseContributorSocials } from "./contributors-utils"
 
 export * from "./contributors-utils"
 
@@ -176,11 +176,7 @@ export async function extractContributors(
     // Sort project groups by PR count descending
     prsByProject.sort((a, b) => b.prs.length - a.prs.length)
 
-    const website = profile?.blog
-      ? profile.blog.startsWith("http://") || profile.blog.startsWith("https://")
-        ? profile.blog
-        : `https://${profile.blog}`
-      : null
+    const socials = parseContributorSocials(profile)
 
     contributors.push({
       login: raw.canonicalLogin,
@@ -188,7 +184,10 @@ export async function extractContributors(
       avatarUrl: profile?.avatar_url || raw.avatarUrl,
       htmlUrl: profile?.html_url || raw.htmlUrl,
       email: profile?.email || null,
-      website: website && website.trim() !== "" ? website.trim() : null,
+      website: socials.website,
+      twitter: socials.twitter,
+      linkedin: socials.linkedin,
+      otherSocials: socials.otherSocials,
       bio: profile?.bio || null,
       prsInPeriodCount,
       acceptedPrsInPeriodCount,

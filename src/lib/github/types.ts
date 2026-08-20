@@ -66,6 +66,11 @@ export type GhPull = {
   user?: GhUser | null
 }
 
+export type GhSocialAccount = {
+  provider: string
+  url: string
+}
+
 export type GhUserProfile = {
   login: string
   id: number
@@ -77,6 +82,8 @@ export type GhUserProfile = {
   bio?: string | null
   location?: string | null
   company?: string | null
+  twitter_username?: string | null
+  social_accounts?: GhSocialAccount[]
 }
 
 export type ProcessedPull = {
@@ -205,6 +212,9 @@ export type ContributorItem = {
   email: string | null
   website: string | null
   bio: string | null
+  twitter?: string | null
+  linkedin?: string | null
+  otherSocials?: GhSocialAccount[]
   prsInPeriodCount: number
   acceptedPrsInPeriodCount: number
   acceptedPrsTotalCount: number
