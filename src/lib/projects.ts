@@ -15,6 +15,7 @@ export const PROJECTS: Project[] = [
   { owner: "Itqan-community", repo: "cms-frontend", tag: "البيانات المفتوحة والبنية التحتية" },
   { owner: "Itqan-community", repo: "quran-apps-directory", tag: "TypeScript / Web" },
   { owner: "Itqan-community", repo: "itqan-community-public", tag: "PHP / Flarum" },
+  { owner: "M97Chahboun", repo: "ahkam_tajweed", tag: "Rust / معالجة النصوص" },
 ]
 
 // Order of clusters (owners). Sections are sorted by this order but clusters

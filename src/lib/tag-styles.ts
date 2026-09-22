@@ -18,6 +18,8 @@ export function getCategoryBadgeClass(tag?: string): string {
       return "border-teal-500/40 bg-teal-500/10 text-teal-700 dark:text-teal-300 dark:border-teal-500/30"
     case "PHP / Flarum":
       return "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300 dark:border-rose-500/30"
+    case "Rust / معالجة النصوص":
+      return "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 dark:border-amber-500/30"
     default:
       return "border-primary/40 bg-primary/10 text-primary dark:border-primary/30"
   }
