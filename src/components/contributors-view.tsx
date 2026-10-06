@@ -80,6 +80,14 @@ export function ContributorsView({
     () => contributors.reduce((acc, c) => acc + c.acceptedPrsInPeriodCount, 0),
     [contributors]
   )
+  const totalClosedIssuesInPeriodCount = useMemo(
+    () =>
+      contributors.reduce(
+        (acc, c) => acc + c.relatedClosedIssuesInPeriodCount,
+        0
+      ),
+    [contributors]
+  )
   const totalPrsOutsidePeriodCount = useMemo(
     () =>
       contributors.reduce(
@@ -193,7 +201,7 @@ export function ContributorsView({
         </div>
 
         {/* Overview Stats Cards */}
-        <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <Card className="border-border/80 border-s-4 border-s-teal-500 bg-card shadow-xs">
             <CardContent className="flex flex-col gap-1 p-3.5 sm:p-4">
               <div className="flex items-center justify-between text-muted-foreground">
@@ -242,6 +250,23 @@ export function ContributorsView({
                 {totalAcceptedPrsInPeriodCount}
               </span>
               <span className="text-[10px] text-muted-foreground/80">{t("طلبات مدمجة", "Merged PRs")}</span>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/80 border-s-4 border-s-rose-500 bg-card shadow-xs">
+            <CardContent className="flex flex-col gap-1 p-3.5 sm:p-4">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span className="text-xs font-medium line-clamp-1">
+                  {t("قضايا مغلقة في الفترة", "Closed Issues in Period")}
+                </span>
+                <div className="flex size-6 items-center justify-center rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                  <GitPullRequestClosed className="size-3.5" />
+                </div>
+              </div>
+              <span className="text-2xl font-bold tabular-nums text-rose-600 dark:text-rose-400">
+                {totalClosedIssuesInPeriodCount}
+              </span>
+              <span className="text-[10px] text-muted-foreground/80">{t("مرتبطة ببرات المساهمين", "Linked to contributor PRs")}</span>
             </CardContent>
           </Card>
 

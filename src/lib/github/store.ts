@@ -4,11 +4,30 @@ import type { GhUserProfile, ProjectData } from "./types"
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-export async function syncAllProjects(options: { force?: boolean } = {}): Promise<{
+type SyncResult = {
   success: boolean
   synced: number
   errors: string[]
-}> {
+}
+
+let inFlight: Promise<SyncResult> | null = null
+
+/**
+ * Synchronize all tracked projects. Concurrent callers (scheduler, refresh
+ * API, CLI) share the same in-flight run so overlapping triggers cannot
+ * multiply GitHub API usage against the rate limit.
+ */
+export function syncAllProjects(
+  options: { force?: boolean } = {}
+): Promise<SyncResult> {
+  if (inFlight) return inFlight
+  inFlight = runSyncAllProjects(options).finally(() => {
+    inFlight = null
+  })
+  return inFlight
+}
+
+async function runSyncAllProjects(options: { force?: boolean } = {}): Promise<SyncResult> {
   const { loadProject } = await import("./loader")
   const { getUserProfile } = await import("./api")
   const { isBotUser } = await import("@/lib/contributors-utils")
@@ -23,7 +42,7 @@ export async function syncAllProjects(options: { force?: boolean } = {}): Promis
       // Sync open issues and pull requests
       const data = await loadProject(project, {
         state: "open",
-        force: options.force ?? true,
+        force: options.force ?? false,
         skipDb: true,
       })
       const saved = await saveProjectToDb(id, data)
@@ -36,7 +55,7 @@ export async function syncAllProjects(options: { force?: boolean } = {}): Promis
       try {
         const closedData = await loadProject(project, {
           state: "closed",
-          force: options.force ?? true,
+          force: options.force ?? false,
           skipDb: true,
         })
         await saveProjectToDb(`${id}:closed`, closedData)
@@ -71,7 +90,9 @@ export async function syncAllProjects(options: { force?: boolean } = {}): Promis
       const userProfiles: GhUserProfile[] = []
       for (const login of uniqueLogins) {
         try {
-          const profile = await getUserProfile(login, options.force ?? false)
+          // User profiles are effectively static; always honor their 24h TTL
+          // instead of bypassing it on every refresh.
+          const profile = await getUserProfile(login, false)
           if (profile) userProfiles.push(profile)
           await sleep(50)
         } catch {

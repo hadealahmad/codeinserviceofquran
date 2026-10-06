@@ -64,6 +64,12 @@ export type GhPull = {
   merged_at: string | null
   body: string | null
   user?: GhUser | null
+  /**
+   * Issues this PR actually closes and that are already closed, based on
+   * GitHub's closing keywords, as opposed to every issue number merely
+   * mentioned in the title/body.
+   */
+  closing_issues?: number[]
 }
 
 export type GhSocialAccount = {

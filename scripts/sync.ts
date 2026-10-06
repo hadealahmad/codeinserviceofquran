@@ -34,15 +34,19 @@ loadEnv()
 
 async function run() {
   const startTime = Date.now()
+  // Default to a cached sync so cron jobs don't exhaust the GitHub rate
+  // limit; pass --force for a full refetch.
+  const force = process.argv.includes("--force")
   console.log("==================================================")
   console.log(`[Sync CLI] Starting synchronization at ${new Date().toISOString()}`)
+  console.log(`[Sync CLI] Mode: ${force ? "forced (full refetch)" : "cached (respect TTLs)"}`)
   console.log(`[Sync CLI] Database URL: ${process.env.DATABASE_URL ? "Configured" : "None (Memory/Disk only)"}`)
   console.log(`[Sync CLI] GitHub Token: ${process.env.GITHUB_TOKEN ? "Configured" : "None"}`)
   console.log("==================================================")
 
   try {
     const { syncAllProjects } = await import("@/lib/github/store")
-    const result = await syncAllProjects({ force: true })
+    const result = await syncAllProjects({ force })
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2)
     console.log("--------------------------------------------------")
